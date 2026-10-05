@@ -1,0 +1,35 @@
+{
+  "name": "kart-royale-cn",
+  "version": "1.0.0",
+  "description": "卡丁王者：中文浏览器赛车与 iPhone 体感手柄",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "node tools/test.mjs",
+    "start": "node runtime/start.mjs",
+    "test:link": "node tools/test-link.mjs",
+    "audio:bake": "vite --config tools/audio-bake.config.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "n8ao": "^2.0.0",
+    "postprocessing": "^6.39.3",
+    "qrcode": "^1.5.4",
+    "simplex-noise": "^4.0.3",
+    "three": "^0.185.1",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.185.1",
+    "puppeteer": "^25.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.5"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

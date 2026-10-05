@@ -1,0 +1,59 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>准备连续背景音乐</title>
+<style>body{font:18px system-ui;margin:40px;background:#fafafa}button{padding:16px;font:inherit}pre{white-space:pre-wrap}</style>
+<h1>准备连续背景音乐</h1><p>保留原游戏曲子，提前生成菜单、比赛、最后一圈的循环音轨。</p>
+<button id="bake">生成三段音乐</button><pre id="status">尚未开始</pre>
+<script type="module">
+import {Synth} from '/src/audio/Synth.ts';
+import {MusicScore} from '/tools/audio-score.ts';
+import {smoothLoop} from '/tools/audio-seam.mjs';
+const status=document.querySelector('#status');
+function wav(buffer,from,length){
+ const channels=buffer.numberOfChannels,rate=buffer.sampleRate;
+ const bytes=new ArrayBuffer(44+length*channels*4),v=new DataView(bytes);
+ const str=(offset,s)=>{for(let i=0;i<s.length;i++)v.setUint8(offset+i,s.charCodeAt(i));};
+ str(0,'RIFF');v.setUint32(4,bytes.byteLength-8,true);str(8,'WAVE');str(12,'fmt ');
+ v.setUint32(16,16,true);v.setUint16(20,3,true);v.setUint16(22,channels,true);
+ v.setUint32(24,rate,true);v.setUint32(28,rate*channels*4,true);v.setUint16(32,channels*4,true);v.setUint16(34,32,true);
+ str(36,'data');v.setUint32(40,length*channels*4,true);
+ let peak=0,minRMS=Infinity,windows=0,seam=0;
+ const data=Array.from({length:channels},(_,c)=>smoothLoop(buffer.getChannelData(c).slice(from,from+length),rate));
+ for(let i=0;i<length;i++)for(let c=0;c<channels;c++){
+  const x=data[c][i];if(!Number.isFinite(x))throw new Error('音轨出现无效数值');
+  peak=Math.max(peak,Math.abs(x));
+  v.setFloat32(44+(i*channels+c)*4,x,true);
+ }
+ for(let i=0;i<length-4410;i+=4410){let sum=0;for(let j=i;j<i+4410;j++)sum+=data[0][j]**2;minRMS=Math.min(minRMS,Math.sqrt(sum/4410));windows++;}
+ for(let c=0;c<channels;c++)seam=Math.max(seam,Math.abs(data[c][0]-data[c][length-1]));
+ return {bytes,peak,minRMS,seam,windows};
+}
+document.querySelector('#bake').onclick=async()=>{
+ document.querySelector('#bake').disabled=true;status.textContent='';
+ try{
+ for(const [mode,full,finale] of [['menu',false,false],['race',true,false],['finale',true,true]]){
+  if(new URLSearchParams(location.search).has('only')&&new URLSearchParams(location.search).get('only')!==mode)continue;
+  status.textContent+=`正在生成 ${mode}…\n`;
+  const period=60/(132*(finale?1.075:1))/4*128,rate=44100;
+  const frames=Math.round(period*rate),ac=new OfflineAudioContext(2,frames*3+rate*3,rate);
+  const s=new Synth(1,ac);
+  // Bake the premix, including existing reverb/delay, then run normal live
+  // volume/duck/limiter processing just once during gameplay.
+  s.music.gain.value=1;s.mix.gain.value=1;s.mix.disconnect();s.mix.connect(ac.destination);
+  const score=new MusicScore(s);score.prepare(full,finale);
+  score.renderSteps(0,16);
+  const pauses=[];
+  for(let bar=1;bar<24;bar++)pauses.push(ac.suspend(bar*period/8-.01).then(()=>{
+    score.renderSteps(bar*16,(bar+1)*16);
+    return ac.resume();
+  }));
+  const buffer=await ac.startRendering();
+  await Promise.all(pauses);
+  const result=wav(buffer,frames*2,frames);
+  if(result.peak>16||result.minRMS<.0001)throw new Error(mode+' 音轨未通过连续性检查 '+JSON.stringify(result));
+  const response=await fetch('/__audio-bake/'+mode,{method:'POST',body:result.bytes});
+  if(!response.ok)throw new Error('保存失败');
+  status.textContent+=`${mode} 已保存，${period.toFixed(3)} 秒，峰值 ${result.peak.toFixed(4)}，最低音量 ${result.minRMS.toFixed(4)}，接缝 ${result.seam.toFixed(4)}\n`;
+ }
+ status.textContent+='三段音乐生成完成';
+ }catch(error){status.textContent+='失败：'+error.message;document.querySelector('#bake').disabled=false;}
+};
+</script></html>

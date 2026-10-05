@@ -1,0 +1,2173 @@
+/* ==========================================================================
+   Kart Royale — UI layer.
+   Everything is scoped under .kr so nothing here can leak into the canvas host.
+
+   ROUND 10 — THE HUD JOINS THE WORLD IT IS DRAWN OVER.
+
+   Round 8 removed the timing tower (verified gone: the eight-row board is on
+   the pause and results screens, and in race the position plate carries one
+   rival row). What it did NOT fix is the other half of the same note — "a
+   well-systematised web-app HUD … on dark navy iOS cards that have nothing to
+   do with Sunset Bay's warm coastal palette". Sampled off the shipped frame:
+
+     lap plate body    #464c52   hue 210°
+     timer plate body  #2c3742   hue 210°
+     position plate    #122638   hue 208°
+     minimap plate     #102b41   hue 207°
+     ---- the world it sits on ----
+     road              #38302b   hue  23°
+     kerb stone        #914141   hue   0°
+
+   Two hundred degrees of hue between the panel and the ground it floats over
+   is not a taste disagreement, it is a measurement. Round 10 changes exactly
+   two things and touches no layout:
+
+     1. EVERY INK IS WARM. Plate body, contour ring, cast shadow, well,
+        die-cut edge, dial channel, minimap casing — all moved to hue 20–28°,
+        keyed off §3's stone `#a8927a` and sand `#e3c893` in shadow. Never
+        #000: the darkest stop in the system is #170e0a. The only cool things
+        left are (a) the full-screen speed vignette, because §2 asks for
+        teal-leaning shadows in the GRADE, and (b) the minimap's well, because
+        it is the sea.
+     2. THE TYPE IS A REAL DISPLAY FACE. `--fd` led with `ui-rounded` — the
+        OS's own rounded UI font — at a 0.594em digit advance. It is now a
+        heavy CONDENSED display stack with drawn 900 and 700 masters. Every
+        fixed digit cell moved from `em` to `ch` so the lockups are pinned to
+        whatever face actually resolves.
+
+   ---------------------------------------------------------------------------
+   ROUND 8 — THE HUD GETS A VOICE, AND LOSES THE TIMING TOWER.
+
+   Round 7 answered "six separately-invented widgets" by making every widget
+   the same object. It worked, and then it kept going: the same object turned
+   out to be a cool navy rounded rectangle with a 1 px grey border, i.e. an iOS
+   settings card, six times, over a warm coral/sand/teal world it shared no
+   colour with. And the object it repeated six times included a full eight-row
+   sim-racing timing tower sitting on the outside of every right-hand corner.
+
+   ROUND 8 keeps the one-system discipline and changes what the system IS:
+
+     ONE container  .kr-plate — a WARM teal-navy body, a warm rim-light along
+                    the top edge tinted by the widget's own accent, a dark
+                    die-cut contour, and a CHAMFERED corner pointing into the
+                    frame so the silhouette is directional and recognisable at
+                    thumbnail size. One recipe, six orientations.
+     ONE type       --fd, a heavy rounded display stack, at 900, with a
+                    permanent multi-offset dark contour ring so every numeral
+                    survives on a blown-out sky with NO plate under it at all
+                    (§7: "everything must have a subtle drop shadow or outline").
+     ONE accent     --accent per widget, drawn from the §3 palette, and used
+                    only in two places: the rim-light tint and the label.
+     ONE gap slot   one label, one signed format, one colour rule.
+
+   LAYOUT — ART_DIRECTION §7:
+
+        [LAP]           [-- MINIMAP --]            [TIME]     ← top rail
+        [POSITION                                             ← centre
+         + RIVAL]                                (empty)
+        [ITEM]             (toast slot)            [SPEEDO]   ← bottom rail
+
+   The right-centre is now EMPTY. The eight-driver order moved to the pause
+   screen and the results screen, where you can actually read it; in race the
+   player gets their own position and the one kart they are racing, which is
+   all the order information that is legible at 100 km/h.
+
+   The minimap stays TOP-CENTRE (§7 permits "bottom-centre or top-centre" and
+   nothing else) but is smaller, pushed hard to the top edge, and rebuilt as a
+   two-tone ribbon so it reads as a circuit rather than as a shoelace.
+   ========================================================================== */
+
+.kr {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  isolation: isolate;
+
+  /* --- ink & paper: never pure black, never pure white ------------------
+     ROUND 10. Every ink in this file was a COOL ink — #0a0d18, rgba(7,14,24),
+     rgba(4,9,18) — i.e. hue ≈ 220°. Sampled off the shipped frame, the plate
+     bodies measured hue 207–215° while the road under them measured hue 23°
+     and the cliffs 25°. That 190° of hue separation is the whole "iOS card
+     over a coastal sunset" complaint, stated as a number. Every ink below is
+     now on the warm side of neutral (hue 20–28°), keyed off §3's stone
+     `#a8927a` and sand `#e3c893` taken down into shadow. Still never #000. */
+  --ink-2: #17100b;
+  --ink-warm: #1a1208;          /* §3: countdown casing, never #000 */
+  --ink-c: rgba(28, 15, 7, 0.93);  /* the ONE contour ink, for the type ring */
+  --paper: #fff4e2;
+  --dim: rgba(240, 220, 190, 0.66);
+  --gold: #ffcf6b;
+  /* §3 palette, the only hues the HUD is allowed to key an accent from */
+  --sky-warm: #ffd0a0;
+  --kerb-red: #e0453f;
+  --boost-blue: #4fc3ff;
+  --sea-shallow: #3fc9c4;
+  /* Mini-turbo tier tint. The HUD overwrites this per frame from TIER_COLORS. */
+  --tier: #a8b6cc;
+  /* Per-widget accent. Overridden by each plate; never used for anything but
+     the rim-light tint and the label colour. */
+  --accent: var(--sky-warm);
+
+  /* --- THE safe-area token ---------------------------------------------
+     One number. Nothing in the HUD is allowed to invent its own margin. */
+  --safe: clamp(14px, 3.9vmin, 60px);
+  --safe-x: calc(var(--safe) * 1.28);
+
+  /* --- ONE radius, ONE chamfer, ONE inner padding, ONE gutter ----------- */
+  --r: clamp(8px, 1.5vmin, 22px);
+  --ch: clamp(11px, 2.1vmin, 32px);   /* the corner cut — the HUD's silhouette */
+  --pad: clamp(7px, 1.15vmin, 18px);
+  --gutter: clamp(8px, 1.4vmin, 22px);
+  --rim: 1.5px;                        /* thickness of the plate rim-light */
+
+  /* --- the two rails. Both top plates are --rail-top tall and both bottom
+     plates are --rail tall, so each rail's far edge is a single straight
+     line across the frame rather than two boxes that miss by 9 px. */
+  --rail: clamp(84px, 14.5vmin, 208px);
+  --rail-top: clamp(56px, 9.1vmin, 130px);
+  /* --- the minimap panel, top-centre ------------------------------------ */
+  --map-w: clamp(138px, 19.4vmin, 284px);
+  --map-h: clamp(72px, 11.1vmin, 162px);
+
+  /* --- ONE plate recipe -------------------------------------------------
+     ROUND 10. Round 8 replaced a cool product navy (#1b2340) with a slightly
+     less cool one (#1e3d59 -> #08192a, measured hue 207–215°). Same fault,
+     one step smaller. The body is now DEEP WARM INK: §3's cliff stone
+     `#a8927a` and sand `#e3c893` carried down four stops into shadow, so the
+     ramp runs hue 22–27° — the same hue family the tarmac, the cliffs and the
+     kerb stone measure at in every captured frame. Opaque, four stops,
+     top-lit per §2, and the darkest stop is #170e0a, not black. */
+  --plate-bg: linear-gradient(179deg, #54402f 0%, #3d2b1e 30%, #281a12 66%, #170e0a 100%);
+  /* THE rim. Painted as the plate element's own background with the body
+     inset over it, so it is a true 1.5 px edge that is WARM along the top
+     (accent-tinted rim light, §2's key) and dark along the bottom (the
+     die-cut contour that separates the plate from a bright sky). */
+  --plate-rim: linear-gradient(
+      177deg,
+      color-mix(in srgb, var(--accent) 72%, #fff6e6) 0%,
+      color-mix(in srgb, var(--accent) 34%, rgba(255, 226, 186, 0.34)) 16%,
+      rgba(150, 112, 74, 0.40) 46%,
+      rgba(24, 12, 5, 0.88) 100%);
+  /* One shadow recipe. `filter` rather than `box-shadow` because the plates
+     are chamfered and a box-shadow would be squared off by the clip. The
+     cast shadow is warm-black too: a cool shadow under a warm plate on warm
+     tarmac was the second thing reading as "pasted on". */
+  --plate-shadow:
+    drop-shadow(0 0.16vmin 0.28vmin rgba(20, 10, 4, 0.58))
+    drop-shadow(0 1.0vmin 2.0vmin rgba(24, 12, 5, 0.48));
+
+  /* --- ONE type scale, ratio ~1.42 -------------------------------------- */
+  --t1: clamp(9px, 1.28vmin, 16px);    /* labels, units */
+  --t2: clamp(12px, 1.72vmin, 22px);   /* rival name, toast */
+  --t3: clamp(17px, 2.45vmin, 31px);   /* secondary numerals (gap, best) */
+  --t4: clamp(26px, 3.75vmin, 48px);   /* speed readout */
+  --t5: clamp(32px, 4.9vmin, 62px);    /* timer, lap */
+  --t6: clamp(44px, 6.7vmin, 86px);    /* position */
+
+  /* Reserved for the countdown and the menus: the one display gradient. */
+  --gold-ramp: linear-gradient(180deg, #fffdf6 5%, #ffe7ae 45%, #f7ae3c 84%, #e07c14 100%);
+  --gold-glow: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
+
+  /* --- TYPE -------------------------------------------------------------
+     ROUND 10. `--fd` led with `ui-rounded`, which resolves to SF Pro Rounded
+     — still the operating system's own face, just the rounded cut of it, and
+     it rendered every numeral in the game at a measured 0.594em digit
+     advance: a wide, soft, friendly product face. That is the "OS system
+     font" the review named.
+
+     `--fd` is now a HEAVY CONDENSED DISPLAY face. Avenir Next Condensed ships
+     on macOS with six REAL weights — Ultra Light through Heavy — so 900 and
+     600 both hit a drawn master and nothing is synthetically emboldened or
+     synthetically narrowed. Condensed is also the correct idiom: race
+     numerals want vertical stress and tight sidebearings so a three-digit
+     speed occupies the same optical block as a two-digit one. Digit advance
+     drops to ~0.46em, which is where the width slack for the position plate
+     and the timer lockup comes from.
+
+     The fallbacks are real condensed faces too, in platform order: Roboto
+     Condensed (Android/CrOS), PT Sans Narrow, Arial Narrow (Windows+Office,
+     macOS), then the old rounded stack so nothing can land on Times.
+     Nothing here is an external file: §4's no-external-assets rule applies to
+     the HUD as much as to the materials.
+
+     THE HARD RULE THIS BUYS: every fixed cell that used to be sized in `em`
+     against SF Pro Rounded's advance is now sized in `ch` — the advance of
+     "0" in whatever face actually resolved — so the lockups cannot break the
+     next time this stack changes. */
+  --f: "Avenir Next", "SF Pro Display", "Segoe UI Variable Display", "Segoe UI",
+       system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --fd: "Avenir Next Condensed", "Roboto Condensed", "PT Sans Narrow",
+        "Arial Narrow", "Helvetica Neue Condensed", ui-rounded,
+        "SF Pro Rounded", "Arial Rounded MT Bold", var(--f);
+
+  /* THE contour ring. Eight zero-blur offsets, so there is no mitre to spike
+     on a diagonal (which is what killed `-webkit-text-stroke` in round 6) and
+     no blur cost, plus one soft contact shadow for form. This is permanent on
+     every headline numeral: the plate is a guarantee, the ring is the backup
+     for the frames where the plate is faded, scaled or absent. */
+  --ring:
+    0.055em 0 0 var(--ink-c), -0.055em 0 0 var(--ink-c),
+    0 0.055em 0 var(--ink-c), 0 -0.055em 0 var(--ink-c),
+    0.039em 0.039em 0 var(--ink-c), -0.039em 0.039em 0 var(--ink-c),
+    0.039em -0.039em 0 var(--ink-c), -0.039em -0.039em 0 var(--ink-c),
+    0 0.07em 0.14em rgba(22, 11, 4, 0.62);
+  --ring-s:
+    0.07em 0 0 var(--ink-c), -0.07em 0 0 var(--ink-c),
+    0 0.07em 0 var(--ink-c), 0 -0.07em 0 var(--ink-c),
+    0.05em 0.05em 0 var(--ink-c), -0.05em 0.05em 0 var(--ink-c),
+    0.05em -0.05em 0 var(--ink-c), -0.05em -0.05em 0 var(--ink-c);
+
+  /* Real easing. Nothing in here is allowed to be linear. */
+  --e-out: cubic-bezier(0.16, 0.84, 0.44, 1);
+  --e-soft: cubic-bezier(0.33, 0, 0.16, 1);
+  --e-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  font-family: var(--fd);
+  color: var(--paper);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1, "case" 1, "ss01" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ==========================================================================
+   THE ONE CONTAINER
+   ==========================================================================
+   Every HUD widget is this. There is no second panel style, no second radius,
+   no second border and no second shadow anywhere below this rule.
+
+   Two layers: the element paints the RIM (a 177° ramp, accent-warm at the top
+   edge, near-black at the bottom) and `::before` paints the BODY inset by
+   --rim over it. That is what makes a real rim-light possible — a `border`
+   can only be one flat colour, which is exactly what made round 7's plates
+   look like form controls.
+
+   The chamfer is a clip-path; the border-radius survives everywhere the
+   polygon does not cut, so each plate is a rounded rect with ONE corner
+   sliced off, pointing into the frame. */
+
+.kr-plate,
+.kr-lap,
+.kr-timer,
+.kr-pos,
+.kr-item-frame,
+.kr-speed-face,
+.kr-pill,
+.kr-toast {
+  position: relative;
+  background: var(--plate-rim);
+  border: 0;
+  border-radius: var(--r);
+  clip-path: var(--clip, none);
+  filter: var(--plate-shadow);
+}
+.kr-plate::before,
+.kr-lap::before,
+.kr-timer::before,
+.kr-pos::before,
+.kr-item-frame::before,
+.kr-speed-face::before,
+.kr-pill::before,
+.kr-toast::before {
+  content: "";
+  position: absolute;
+  inset: var(--rim);
+  border-radius: inherit;
+  background: var(--plate-bg);
+  /* §2's warm sand bounce from below, so the plate is lit by the same rig as
+     the world behind it rather than being a flat fill. */
+  box-shadow: inset 0 -0.55vmin 1.3vmin rgba(255, 172, 98, 0.16);
+  clip-path: var(--clip, none);
+  pointer-events: none;
+  /* Behind the plate's own content but in front of the rim. Every plate has a
+     `filter`, which makes it a stacking context, so this cannot escape. Without
+     it the body layer paints over every static child — an absolutely positioned
+     pseudo beats in-flow content in the paint order — and the labels vanish. */
+  z-index: -1;
+}
+
+/* The six orientations of the one chamfer. Each corner plate cuts the corner
+   that points at the centre of the frame, so the HUD's outline is a set of
+   tabs aiming inward and is recognisable at thumbnail size (§9.1). */
+.kr { --clip-br: polygon(0 0, 100% 0, 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%, 0 100%);
+      --clip-bl: polygon(0 0, 100% 0, 100% 100%, var(--ch) 100%, 0 calc(100% - var(--ch)));
+      --clip-tr: polygon(0 0, calc(100% - var(--ch)) 0, 100% var(--ch), 100% 100%, 0 100%);
+      --clip-tl: polygon(var(--ch) 0, 100% 0, 100% 100%, 0 100%, 0 var(--ch));
+      --clip-b2: polygon(0 0, 100% 0, 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%,
+                         var(--ch) 100%, 0 calc(100% - var(--ch))); }
+
+/* The one WELL: the recessed area inside a plate that holds a graphic. Used by
+   the item box and the minimap and by nothing else. It inherits the plate's
+   own `--clip`, so the recess follows the chamfer instead of poking a square
+   corner through a cut one. */
+.kr-well,
+.kr-item-frame::after {
+  border-radius: calc(var(--r) * 0.6);
+  clip-path: var(--clip, none);
+  background: rgba(18, 10, 5, 0.52);
+  box-shadow:
+    inset 0 0.35vmin 0.9vmin rgba(14, 7, 3, 0.68),
+    inset 0 -0.12vmin 0 rgba(255, 226, 186, 0.14);
+}
+
+/* ==========================================================================
+   THE ONE NUMERAL / THE ONE LABEL
+   ==========================================================================
+   TWO deliberate treatments off ONE family, and no third.
+
+     NUMERALS  --fd at 900 (Avenir Next Condensed Heavy — a drawn master, not
+               a synthetic bold), tabular lining figures, tracking ~0, with
+               the permanent contour ring.
+     LABELS    --fd at 700 (Bold — also a drawn master), uppercase, 0.22em
+               tracking with a matching text-indent so the trailing letter
+               space does not push the word off its own left edge.
+
+   Round 7 removed all outlines on the argument that the plate made them
+   unnecessary — which held right up until the countdown state faded the
+   plates and the whole HUD turned to mush over sunlit grass (grid.png). The
+   ring is now unconditional and the plates are never faded. */
+
+.kr-lock-l,
+.kr-line-v,
+.kr-item-count {
+  font-family: var(--fd);
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  color: var(--paper);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  text-shadow: var(--ring);
+  paint-order: stroke fill;
+}
+
+/* The lockup wrapper. One layer. */
+.kr-lock { position: relative; display: inline-block; }
+.kr-lock-l { display: flex; align-items: baseline; white-space: nowrap; }
+
+.kr-label {
+  font-family: var(--fd);
+  font-size: var(--t1);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  /* Tracking adds a trailing space after the last cap. Left-aligned labels
+     (LAP) are unaffected; the CENTRED one (TIME) would sit 0.11em left of
+     centre, so it gets a matching indent below. */
+  text-transform: uppercase;
+  /* The label is where the widget's accent lives, at a weight low enough that
+     six accents across the frame read as one warm family rather than as a
+     colour code the player has to learn. */
+  color: color-mix(in srgb, var(--accent) 52%, var(--dim));
+  line-height: 1;
+  text-shadow: var(--ring-s);
+}
+
+/* The one display gradient, used ONLY by the countdown and the menus. */
+.kr-gold {
+  background-image: var(--gold-ramp);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: var(--gold-glow);
+}
+
+/* ==========================================================================
+   Full-screen atmospherics
+   ========================================================================== */
+
+.kr-vig,
+.kr-boost,
+.kr-drift,
+.kr-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.kr-vig {
+  background: radial-gradient(ellipse 74% 64% at 50% 52%,
+              rgba(4, 7, 18, 0) 42%, rgba(4, 7, 18, 0.42) 78%, rgba(3, 5, 14, 0.82) 100%);
+  opacity: 0;
+}
+
+/* A warm rim, not a wash. */
+.kr-boost {
+  background:
+    radial-gradient(ellipse 62% 56% at 50% 50%,
+      rgba(255, 176, 80, 0) 68%, rgba(255, 152, 62, 0.16) 88%, rgba(255, 116, 44, 0.34) 100%),
+    radial-gradient(ellipse 130% 26% at 50% 112%,
+      rgba(255, 206, 130, 0.22), rgba(255, 206, 130, 0) 70%);
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+
+/* Edge tint, and it now carries exactly one fact: the tier you have BANKED —
+   what you keep if you let go this instant. What you are earning is the rails
+   below. Two facts, two surfaces, never the same fact twice. */
+.kr-drift {
+  background: radial-gradient(ellipse 72% 64% at 50% 54%,
+              transparent 64%, var(--tier) 116%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: background 0.22s var(--e-out);
+}
+
+/* ==========================================================================
+   THE LOOP — drift charge rails, the tier-up wash, the release callout
+   ==========================================================================
+   ROUND 11. Measured on the shipped build, kart posed at tier 2 / charge 0.72:
+   the only mark on screen saying so was a 3 px stroke on the inner radius of a
+   157 px dial in the bottom-right corner, in an orange within ~20 degrees of
+   hue of the speed fill it sat against. At 1:1 it is invisible — the frame has
+   to be magnified five times before you can find it. Meanwhile the player's
+   eyes are on the apex, which is roughly the centre of the frame, roughly
+   1300 px away from that stroke.
+
+   Peripheral vision resolves MOTION and COLOUR and does not resolve shape or
+   text, so the answer is not a bigger widget. It is a moving band of colour at
+   the edge of the frame, which is the one place peripheral vision is actually
+   pointed.
+
+   COST. Each rail is ONE element with two background layers, moved by ONE
+   translateY off `--fill`. No layout, no paint, no filter, and no per-frame
+   allocation: the HUD writes three cached custom properties a frame and the
+   compositor does the rest. `--fill` is deliberately NOT eased — a tier
+   boundary is a step, and the reset to zero is what the player feels as
+   "banked, start again". Only the layer's opacity is eased. */
+
+.kr-charge {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  /* ROUND 14. `--fill` IS NO LONGER THE CHARGE. It is the cumulative position
+     on the whole three-rung ladder, `(tier + charge) / 3`, written by HUD.ts.
+     The reason is measured, not stylistic. `chargeFor()` in Kart.ts resets the
+     within-tier charge to zero at every tier boundary, so with `--fill = charge`
+     the rail's height went to ZERO on the exact frame a tier was banked:
+     probed at 1280x720, 1920x1080 and 2560x1440, over dark, over §3's sky-warm
+     and over a blown-out white, `tier 1 charge 0` and `tier 2 charge 0` all
+     measured `lit = 0 px`. The one moment the player most needs to know what
+     they are holding was the one moment the rail was blank, and it stayed
+     nearly blank for the first tenth of the next rung.
+     As a ladder position the fill is CONTINUOUS across a promotion — 1.0 of
+     rung one and 0.0 of rung two are both 0.333 — so the rail only ever climbs
+     during a slide, and the banked tier owns the whole body of a bar that is at
+     least a third of the screen from the instant tier 1 lands. */
+  --fill: 0;
+  /* `--cc` is the tier you have BANKED, which is also the colour of the sparks
+     coming off the rear wheels, so the screen and the world never disagree.
+     `--cn` is the tier you are EARNING, and it appears only as a bright band
+     immediately under the rail's leading cap — a preview of the reward, right
+     where the eye is already tracking the motion. That pairing is the entire
+     "hold or release?" decision, answered without a number. */
+  --cc: #a8b6cc;
+  --cn: var(--boost-blue);
+  /* Pulse period and depth. Peripheral vision resolves temporal frequency about
+     as well as it resolves hue, and better than it resolves either when the sky
+     behind is blowing out — so the tier is ALSO encoded as how fast the rail
+     breathes. Set per tier below. */
+  --pulse: 1.1s;
+  --pulse-lo: 0.84;
+  will-change: opacity;
+}
+.kr-charge-e {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* Wide enough to be caught by peripheral vision at 1280 (38 px) and not so
+     wide at 2560 (90 px) that it eats the frame. */
+  width: clamp(30px, 5.4vmin, 90px);
+  overflow: hidden;
+}
+
+/* THE TWO RUNG MARKS. Fixed to the frame, not to the bar, at exactly a third
+   and two thirds of the rail — the two tier boundaries. They turn a height into
+   a COUNT: how many marks the cap has climbed past IS the tier you have banked,
+   readable without resolving hue, which is what makes this survive both a
+   blown-out sky and a red-green deficiency. Cream between two ink edges, the
+   same recipe every numeral in the HUD uses to survive over a bright sky.
+   Painted on `::after`, so they sit OVER the moving bar, and they cost nothing:
+   one extra background box per rail, never animated, never laid out. */
+.kr-charge-e::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.14s linear;
+  background:
+    linear-gradient(to top,
+      transparent calc(33.333% - 3px),
+      rgba(30, 16, 7, 0.88) calc(33.333% - 3px), rgba(30, 16, 7, 0.88) calc(33.333% - 1px),
+      rgba(255, 246, 230, 0.96) calc(33.333% - 1px), rgba(255, 246, 230, 0.96) calc(33.333% + 1px),
+      rgba(30, 16, 7, 0.88) calc(33.333% + 1px), rgba(30, 16, 7, 0.88) calc(33.333% + 3px),
+      transparent calc(33.333% + 3px)),
+    linear-gradient(to top,
+      transparent calc(66.666% - 3px),
+      rgba(30, 16, 7, 0.88) calc(66.666% - 3px), rgba(30, 16, 7, 0.88) calc(66.666% - 1px),
+      rgba(255, 246, 230, 0.96) calc(66.666% - 1px), rgba(255, 246, 230, 0.96) calc(66.666% + 1px),
+      rgba(30, 16, 7, 0.88) calc(66.666% + 1px), rgba(30, 16, 7, 0.88) calc(66.666% + 3px),
+      transparent calc(66.666% + 3px));
+}
+/* Only while a slide is live. During a boost the rail means "time left", which
+   has no rungs, and a scale over it would be a lie. */
+.kr-charge.drifting .kr-charge-e::after { opacity: 1; }
+/* DEFECT D4, HALF ONE: THE RAILS HAD NO env() TERM AT ALL.
+   `left: 0` / `right: 0` on a 30 px-wide element, against landscape safe-area
+   insets of 47 px (iPhone 14/15), 50 px (13 mini) and 59 px (15 Pro Max) — so
+   the whole ladder was 100% behind the notch on three shipping iPhones, and the
+   masks below fade OUTWARD from the frame edge, which put the BRIGHTEST part of
+   the rail furthest under the cutout. The failure was an ABSENT number, not a
+   wrong one, which is why it survived every review: nothing looked off, because
+   on a device with no inset nothing WAS off.
+   `+ 8px` on top of the inset keeps a hair of gap on a device that reports 0. */
+.kr-charge-e.l { left: calc(env(safe-area-inset-left, 0px) + 8px); transform-origin: 0% 50%;
+  -webkit-mask-image: linear-gradient(to right, #000 0%, rgba(0, 0, 0, 0.5) 38%, transparent 100%);
+          mask-image: linear-gradient(to right, #000 0%, rgba(0, 0, 0, 0.5) 38%, transparent 100%); }
+.kr-charge-e.r { right: calc(env(safe-area-inset-right, 0px) + 8px); transform-origin: 100% 50%;
+  -webkit-mask-image: linear-gradient(to left, #000 0%, rgba(0, 0, 0, 0.5) 38%, transparent 100%);
+          mask-image: linear-gradient(to left, #000 0%, rgba(0, 0, 0, 0.5) 38%, transparent 100%); }
+
+/* DEFECT D4, HALF TWO: ON TOUCH THE RAIL IS SHORTENED, NOT INVERTED.
+   The bottom of the frame is the grip band — the hand is there for the whole
+   lap, and on the right it is holding down DRIFT, which is the button that
+   earned the rail in the first place. Measured: DRIFT covered 18.3 of the right
+   rail's 30 px.
+   The rail box now ends at 46% of the frame height, so at tier-1 fill (0.333)
+   the leading cap lands at ~0.37H and at fill 0.15 at ~0.47H — both clear of
+   the 0.55H grip band at every fill a player can actually hold.
+   Growth stays BOTTOM-UP. Inverting it top-down was the alternative and is
+   rejected: it would teach two opposite metaphors for one number, since the
+   desktop rail grows upward and the two must never disagree. The rungs stay
+   meaningful because they are fixed to the rail BOX, not to the frame. */
+html[data-touch] .kr-charge-e {
+  top: calc(env(safe-area-inset-top, 0px) + 4%);
+  bottom: 46%;
+}
+
+/* The rail itself. Two layers on ONE element so both move together: a warm
+   scrim (the same #170e0a-family ink as every plate) under a tier ramp with a
+   3 px near-white cap at the leading edge. The cap is what survives a
+   blown-out golden-hour sky — a saturated colour alone would not, and a
+   cream-on-dark edge always does.
+
+   The cap, the `--cn` preview band and the handover to `--cc` are all in PX,
+   not in percentages, and that is load-bearing rather than a style choice.
+   This element is the full height of the rail and is moved by `translateY`, so
+   the only part of the gradient on screen is its top `--fill` of that height —
+   which means a stop written as a percentage is a percentage of the FULL rail,
+   not of the visible bar. The previous version put `--cn` at 4 px but `--cc` at
+   9%, i.e. ~97 px down a 1080 px rail, so below 0.09 of charge the only colour
+   on screen was the tier the player had NOT yet earned, and the banked tier —
+   the one matching the sparks off the rear wheels — never appeared at all. The
+   rail was reporting the wrong tier for the first tenth of every charge, and
+   for the whole of any charge that never got past 9%.
+   In px the preview band is a fixed 22 px under the cap at every resolution and
+   every fill, so `--cc` owns the body from ~34 px of bar upward.
+
+   ROUND 14 measured what that fix left behind. The px handover is correct and
+   stays, but it was only ever half the problem: with `--fill` set from the
+   WITHIN-TIER charge, the bar was 36 px tall at 1280x720 the moment after tier 1
+   banked (of which 23 px was still the next tier's colour, banked fraction 0.25)
+   and 0 px tall on the frame the tier actually landed. `--fill` is now the
+   cumulative ladder position (see `.kr-charge`), so the shortest bar the player
+   can ever see with a tier banked is a third of the screen and `--cc` owns
+   essentially all of it. Same gradient, honest input. */
+.kr-charge-e > i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 100%;
+  transform: translateY(calc((1 - var(--fill)) * 100%));
+  will-change: transform;
+  background:
+    linear-gradient(to bottom,
+      rgba(255, 250, 240, 0.98) 0px, rgba(255, 250, 240, 0.98) 4px,
+      var(--cn) 5px,
+      var(--cn) 20px,
+      color-mix(in srgb, var(--cn) 55%, var(--cc)) 26px,
+      var(--cc) 34px,
+      /* ROUND 14. Was 70/44/30. Probed over §3's sky-warm `#ffd0a0` and over a
+         blown-out `#fffdf4`, the old tail dropped under the saturation the eye
+         needs to call a hue at all for the bottom two thirds of a long bar —
+         293 of 432 lit pixels came back unclassifiable at 1280x720. The tail
+         now floors at 0.58, which is still transparent enough to see the road
+         through and no longer a colour that only exists on a dark sky. */
+      color-mix(in srgb, var(--cc) 90%, transparent) 22%,
+      color-mix(in srgb, var(--cc) 74%, transparent) 56%,
+      color-mix(in srgb, var(--cc) 58%, transparent) 100%),
+    /* The scrim holds a FLOOR rather than fading out. Measured against §3's
+       sky-warm `#ffd0a0` with the world hidden, an orange tier-2 body over an
+       orange sunset with the scrim tailing to 0.12 alpha simply vanished below
+       the halfway mark — the rail had a bright cap and no body. Nothing in the
+       rail is allowed to depend on the sky being dark. */
+    linear-gradient(to bottom,
+      rgba(24, 13, 5, 0.80) 0%, rgba(24, 13, 5, 0.64) 40%, rgba(24, 13, 5, 0.50) 100%);
+}
+
+/* THE PULSE — the third channel, and the one that costs nothing.
+   One keyframe, driven by two custom properties, so the rail breathes FASTER
+   AND DEEPER the more you are holding: tier 1 a slow 1.1 s swell, tier 3 a hard
+   0.40 s throb. Peripheral vision is far better at temporal frequency than at
+   hue, so the tier survives even when the sun is directly in frame and every
+   saturated colour on screen is being washed toward the same cream.
+   Boost reuses the fastest rate: during a boost the bar is DRAINING, which is
+   slow motion, and slow motion is what peripheral vision is worst at.
+   Opacity only — the transform belongs to `--fill`. */
+.kr-charge.t1 { --pulse: 1.10s; --pulse-lo: 0.84; }
+.kr-charge.t2 { --pulse: 0.70s; --pulse-lo: 0.74; }
+.kr-charge.t3 { --pulse: 0.40s; --pulse-lo: 0.60; }
+.kr-charge.boosting { --pulse: 0.40s; --pulse-lo: 0.70; }
+.kr-charge.t1 .kr-charge-e > i,
+.kr-charge.t2 .kr-charge-e > i,
+.kr-charge.t3 .kr-charge-e > i,
+.kr-charge.boosting .kr-charge-e > i {
+  animation: kr-railPulse var(--pulse) var(--e-soft) infinite;
+}
+@keyframes kr-railPulse {
+  0%, 100% { opacity: var(--pulse-lo); }
+  50%      { opacity: 1; }
+}
+
+/* The tier-up flare: the rail slams wide and hot for a fifth of a second. */
+/* `none` fill, not `both`: the class is never removed, and a `both` fill would
+   leave a standing `filter: brightness(1)` on two full-height elements for the
+   rest of the race — a permanent extra compositing pass for no pixels. */
+.kr-charge.pop .kr-charge-e { animation: kr-railPop 0.44s var(--e-out); }
+@keyframes kr-railPop {
+  0%   { transform: scaleX(2.4); filter: brightness(2.6); }
+  100% { transform: scaleX(1); filter: brightness(1); }
+}
+
+/* --- the tier-up wash -----------------------------------------------------
+   A colour wash that rushes INWARD from the frame edge and is transparent
+   through the middle third: the one frame the player most needs to see the
+   apex is the one frame nothing is painted over it. The inward scale is the
+   punch — it is the whole reason this reads as a hit rather than as a tint. */
+.kr-tierpop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  --tc: var(--boost-blue);
+  /* The transparent core is deliberately huge. Measured on the first cut, an
+     `ellipse 66% 58%` with the ramp starting at 38% put tier colour over the
+     entire frame including the apex — the exact thing this must not do. The
+     ramp now starts past half the radius of an ellipse wider than the frame,
+     so the middle ~55% of the width and ~50% of the height stay clean and the
+     wash is a rush of colour INTO the frame from outside it. */
+  background:
+    radial-gradient(ellipse 82% 74% at 50% 52%,
+      transparent 54%,
+      color-mix(in srgb, var(--tc) 30%, transparent) 82%,
+      color-mix(in srgb, var(--tc) 82%, transparent) 100%),
+    radial-gradient(ellipse 132% 120% at 50% 52%,
+      transparent 72%, rgba(255, 248, 236, 0.24) 100%);
+  /* No `will-change` on purpose: this is a full-screen layer and at 2560x1440
+     a standing promotion is ~14 MB of compositor memory for something that is
+     live for 0.42 s. The animation promotes it for exactly as long as it runs. */
+}
+/* ATTACK ON FRAME ZERO. Measured on the shipped build by sampling computed
+   style every animation frame from the frame `retrigger()` adds the class:
+   this wash peaked 33 ms after the trigger (2 frames) and its tier-3 variant
+   50 ms (3 frames), while the spark burst and the audio flourish — which are a
+   particle spawn and an oscillator ramp, both raised from `Kart.update` — are
+   at full value on the trigger frame itself. Three cues peaking on three
+   different frames is exactly the "mush rather than an event" failure. Every
+   keyframe list below now starts AT its peak opacity and decays; the rush
+   inward is carried by the scale alone, which is where it was always doing the
+   work. Nothing about the look changes; the hit just lands with the sparks. */
+.kr-tierpop.run { animation: kr-tierPop 0.42s var(--e-out) both; }
+/* Tier 3 is the one the player is chasing; it gets a longer, harder hit. */
+.kr-tierpop.t3.run { animation: kr-tierPop3 0.58s var(--e-out) both; }
+@keyframes kr-tierPop {
+  0%   { opacity: 0.90; transform: scale(1.16); }
+  26%  { opacity: 0.72; transform: scale(1); }
+  100% { opacity: 0;    transform: scale(0.985); }
+}
+@keyframes kr-tierPop3 {
+  0%   { opacity: 1;    transform: scale(1.24); }
+  20%  { opacity: 0.80; transform: scale(1); }
+  46%  { opacity: 0.34; transform: scale(0.995); }
+  100% { opacity: 0;    transform: scale(0.98); }
+}
+
+/* --- the release callout --------------------------------------------------
+   Bottom-right, sitting on the speedometer's top edge, because the payoff and
+   the instrument showing the payoff should be one cluster. It is a CHILD of
+   .kr-speed, so the touch reflow that moves the speedometer moves this too and
+   there is no second override to keep in sync.
+
+   Fully transient: nothing is added to the resting frame. */
+.kr-callout {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: calc(var(--gutter) * 0.7);
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.45em;
+  white-space: nowrap;
+  opacity: 0;
+  transform-origin: 100% 100%;
+  --tc: var(--boost-blue);
+  /* Measured at 1280x720 the first cut came out 89x16 px, which is a footnote,
+     not a payoff. This is the only element in the HUD whose job is to make
+     someone want to run the corner again. */
+  font-size: calc(var(--t2) * 1.2);
+}
+.kr-callout-l {
+  font-family: var(--fd);
+  font-weight: 900;
+  font-size: 1em;
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--tc) 34%, #fff6e6);
+  /* the ring first, so it survives the sky, then the tier colour as a glow */
+  text-shadow: var(--ring-s),
+               0 0 0.7vmin color-mix(in srgb, var(--tc) 85%, transparent),
+               0 0 1.8vmin color-mix(in srgb, var(--tc) 55%, transparent);
+}
+.kr-callout.t3 .kr-callout-l { font-size: 1.42em; letter-spacing: 0.2em; text-indent: 0.2em; }
+/* The chain is the reason to rerun the track. It only exists from two up. */
+.kr-callout-x {
+  font-family: var(--fd);
+  font-weight: 900;
+  font-size: 1.34em;
+  color: var(--paper);
+  text-shadow: var(--ring);
+  opacity: 0;
+}
+.kr-callout.chain .kr-callout-x { opacity: 1; }
+/* The payoff has to be ON the frame the boost ignites, not seven frames after
+   it. Measured on the shipped build this reached full opacity at 117 ms — the
+   ring, the plume, the FOV punch and the audio had all been and gone by then,
+   and the word arrived as a separate, later, smaller event. It now starts lit
+   and oversized on frame zero and settles. */
+.kr-callout.run { animation: kr-callout 1.15s var(--e-out) both; }
+@keyframes kr-callout {
+  0%   { opacity: 1; transform: translateY(0) scale(1.34); }
+  9%   { opacity: 1; transform: translateY(0) scale(1.06); }
+  16%  { opacity: 1; transform: translateY(0) scale(1); }
+  70%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-0.7vmin) scale(0.97); }
+}
+
+.kr-flash {
+  background: radial-gradient(circle at 50% 48%, #fffdf4 0%, #ffe9c0 45%, rgba(255, 220, 160, 0) 78%);
+  opacity: 0;
+}
+.kr-flash.on { animation: kr-flash 0.62s var(--e-out) both; }
+@keyframes kr-flash {
+  0%   { opacity: 0; transform: scale(1.25); }
+  9%   { opacity: 0.92; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+.kr-flash.tick {
+  background: radial-gradient(circle at 50% 44%, rgba(255, 226, 160, 0.92) 0%,
+              rgba(255, 176, 84, 0.34) 42%, rgba(255, 150, 60, 0) 76%);
+  animation: kr-tick 0.44s var(--e-out) both;
+}
+@keyframes kr-tick {
+  0%   { opacity: 0; transform: scale(1.22); }
+  11%  { opacity: 0.34; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(1.1); }
+}
+
+/* ==========================================================================
+   HUD frame
+   ========================================================================== */
+
+.kr-hud {
+  position: absolute;
+  isolation: isolate;
+  top: calc(var(--safe) + env(safe-area-inset-top, 0px));
+  right: calc(var(--safe-x) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--safe) + env(safe-area-inset-bottom, 0px));
+  left: calc(var(--safe-x) + env(safe-area-inset-left, 0px));
+  transition: opacity 0.55s var(--e-out), transform 0.6s var(--e-out), filter 0.42s var(--e-soft);
+}
+.kr.is-blocked .kr-hud {
+  opacity: 0;
+  transform: scale(0.965);
+  filter: blur(8px);
+}
+.kr.is-dimmed .kr-hud {
+  opacity: 0.28;
+  filter: blur(3px) saturate(0.5);
+}
+/* COUNTDOWN. Round 7 faded the whole group to 0.78 — plate fills included —
+   which is why the start-line frame's speedo, position numeral and lap plate
+   all dissolved into sunlit grass while the one element that stayed opaque
+   was the standings tower. The countdown entrance is now TRANSFORM ONLY.
+   Plate fills are never faded, by anything, ever. */
+.kr.is-counting .kr-hud {
+  opacity: 1;
+  transform: translateY(0.7vmin) scale(0.985);
+}
+
+/* --- LAP — top-left ------------------------------------------------------- */
+
+/* Two mirrored top columns: a rail-height plate with a transient pill under
+   it. Both plates are exactly --rail-top tall, so the top rail's bottom edge
+   is one straight line instead of a 9 px step. */
+.kr-tl,
+.kr-tr {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gutter);
+}
+.kr-tl { left: 0; align-items: flex-start; }
+.kr-tr { right: 0; align-items: flex-end; }
+
+.kr-lap {
+  --accent: var(--sky-warm);
+  --clip: var(--clip-br);
+  height: var(--rail-top);
+  box-sizing: border-box;
+  padding: 0 calc(var(--pad) * 1.5) 0 calc(var(--pad) * 1.25);
+  display: flex;
+  align-items: center;
+}
+.kr-lap-in {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3em;
+  transform-origin: 0% 50%;
+}
+.kr-lap-in.punch { animation: kr-punch 0.62s var(--e-spring) both; }
+@keyframes kr-punch {
+  0%   { transform: scale(1); }
+  22%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.kr-lap-nums { font-size: var(--t5); line-height: 0.86; }
+.kr-lap-cur { font-size: 1em; font-weight: 900; letter-spacing: -0.02em; }
+.kr-lap-sep {
+  font-size: 0.5em;
+  font-weight: 900;
+  margin: 0 0.06em 0 0.12em;
+  transform: translateY(-0.05em);
+  color: var(--dim);
+}
+.kr-lap-tot { font-size: 0.52em; font-weight: 900; color: var(--dim); }
+/* Final lap: the ONE state colour, on the numeral only. */
+.kr-lap.final .kr-lap-cur { color: var(--gold); }
+.kr-lap.final { --accent: var(--gold); }
+
+/* lap-split flash, directly under the lap plate */
+.kr-split { opacity: 0; transform-origin: 0% 50%; }
+.kr-split.on { animation: kr-split 2.5s var(--e-out) both; }
+@keyframes kr-split {
+  0%   { opacity: 0; transform: translateX(-1.6vmin) scale(0.94); }
+  9%   { opacity: 1; transform: translateX(0) scale(1.02); }
+  16%  { transform: translateX(0) scale(1); }
+  82%  { opacity: 1; transform: translateX(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-1.2vmin) scale(0.97); }
+}
+
+/* --- THE ONE KEY/VALUE ROW ------------------------------------------------
+   Lap split, best lap and the rival interval are the same object: a dim
+   uppercase key and one tabular value. `.kr-pill` is that row wrapped in a
+   plate (it floats over the world); `.kr-line` is the same row living inside
+   a plate already, so it carries a hairline rule instead of a second rim. */
+.kr-pill,
+.kr-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.4em;
+  font-size: var(--t1);
+}
+.kr-pill { padding: 0.55em 0.95em 0.6em; }
+.kr-line {
+  align-self: stretch;
+  /* Spans exactly the plate's content box, so it starts on the numeral's left
+     edge and ends on the value's right edge and aligns to something. */
+  border-top: 1px solid rgba(255, 214, 170, 0.20);
+  padding-top: 0.7em;
+}
+.kr-line-k {
+  font-family: var(--fd);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  white-space: nowrap;
+  text-shadow: var(--ring-s);
+}
+.kr-line-v { font-size: var(--t3); }
+.kr-split.best { --accent: var(--gold); }
+.kr-split.best .kr-line-v,
+.kr-bestpill.best-new .kr-line-v { color: var(--gold); }
+
+/* --- TIME — top-right ----------------------------------------------------- */
+
+/* One centred column: label above digits, both centre-aligned, plate hugging
+   the tabular digit width plus --pad. Round 7's timer was a 275 px box with
+   the digits in the top-left and the label pinned top-right, leaving 40% of
+   the plate as an empty quadrant. The best-lap readout that used to live in
+   that quadrant is now a pill under the plate, mirroring the lap split — so
+   the plate's height is constant and the top rail cannot step. */
+.kr-timer {
+  /* ROUND 10. This accent was --boost-blue: a 210° cool note on the plate the
+     player's eye returns to most, in a frame whose every other hue is 20–40°.
+     §3's boost blue still owns the drift/boost feedback, where it means
+     something; the race clock takes the gold, which the best-lap pill under
+     it already carried — so the top-right column is now ONE accent, not two. */
+  --accent: var(--gold);
+  --clip: var(--clip-bl);
+  height: var(--rail-top);
+  box-sizing: border-box;
+  padding: 0 calc(var(--pad) * 1.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3em;
+}
+
+/* JITTER FIX — the digits are tabular AND every field has a hard width, so no
+   advance-width difference, no subpixel rounding and no font fallback can
+   move anything: the fields consume reserved space.
+   ROUND 10: those widths are in `ch`, not `em`. `1ch` IS the advance of "0"
+   in whatever face resolved, and with tabular figures every digit equals it,
+   so the cells stay exactly one/two digits wide across the whole fallback
+   chain. In `em` they were calibrated to SF Pro Rounded's 0.594em digit and
+   would have opened 0.13em gaps between "2", ":" and "48" the moment the
+   family changed. The parent no longer needs a width at all — four fixed
+   children sum to a constant. */
+.kr-timer-v {
+  justify-content: center;
+  font-size: var(--t5);
+  font-weight: 900;
+  line-height: 0.94;
+  letter-spacing: 0;
+}
+.kr-timer-v > span { flex: 0 0 auto; }
+.kr-t-m { width: 1.06ch; text-align: right; }
+.kr-t-sep { width: 0.52ch; text-align: center; color: var(--dim); }
+.kr-t-s { width: 2.06ch; text-align: left; }
+/* Subordinate the fraction so the eye locks on minutes:seconds. */
+.kr-t-f {
+  width: 2.6ch;   /* "." + two digits, in its OWN (smaller) ch */
+  text-align: left;
+  font-size: 0.64em;
+  color: rgba(255, 244, 226, 0.78);
+  align-self: baseline;
+}
+
+/* Persistent best lap — the number the player is actually racing. Same pill
+   as the lap split, on the other side of the frame. */
+.kr-bestpill {
+  --accent: var(--gold);
+  opacity: 0;
+  transform: translateY(-0.5vmin) scale(0.96);
+  transform-origin: 100% 0%;
+  transition: opacity 0.4s var(--e-out), transform 0.5s var(--e-out);
+}
+.kr-tr.has-best .kr-bestpill { opacity: 1; transform: none; }
+
+/* --- POSITION — left-centre ----------------------------------------------- */
+
+/* The position plate now carries the WHOLE order story: your place, and the
+   one kart you are racing. That is what replaced the eight-row timing tower. */
+.kr-pos {
+  --accent: var(--gold);
+  --clip: var(--clip-br);
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: calc(var(--pad) * 0.9) calc(var(--pad) * 1.6) var(--pad) calc(var(--pad) * 1.25);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5em;
+  font-size: var(--t1);
+  /* FIXED. The rival row's delta changes width between "+1.08" and "+12.48",
+     and a plate that resizes sixty times a second is worse than one that is a
+     few pixels wider than it needs to be. Sized off the longest roster name at
+     --t2 plus the widest signed delta. */
+  width: clamp(176px, 24vmin, 348px);
+  box-sizing: border-box;
+}
+
+.kr-pos-in {
+  position: relative;
+  transform-origin: 12% 60%;
+  line-height: 0.8;
+  font-size: var(--t6);
+}
+.kr-pos-in .kr-lock-l { align-items: flex-start; }
+.kr-pos-in.punch { animation: kr-posPunch 0.72s var(--e-spring) both; }
+@keyframes kr-posPunch {
+  0%   { transform: scale(1); }
+  20%  { transform: scale(1.16); }
+  52%  { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+.kr-pos-n { font-size: 1em; font-weight: 900; letter-spacing: -0.035em; }
+/* The suffix is part of the same word, same colour, same treatment. */
+.kr-pos-s {
+  font-size: 0.36em;
+  font-weight: 900;
+  margin-top: 0.42em;
+  margin-left: 0.14em;
+  color: var(--dim);
+}
+
+/* RANK is a fixed semantic, not a mood: rank 1 is the only state that changes
+   the numeral's colour, and it changes it to the ONE accent in the system. */
+.kr-pos.p1 .kr-pos-n,
+.kr-pos.p1 .kr-pos-s { color: var(--gold); }
+
+.kr-pos-arrow {
+  position: absolute;
+  left: 100%;
+  top: 0.06em;
+  margin-left: 0.12em;
+  font-size: 0.3em;
+  font-weight: 900;
+  line-height: 1;
+  opacity: 0;
+  color: var(--paper);
+  text-shadow: var(--ring-s);
+}
+.kr-pos.gain .kr-pos-arrow { color: #7ef0a4; }
+.kr-pos.loss .kr-pos-arrow { color: #ff8a7a; }
+.kr-pos-arrow.run { animation: kr-posArrow 0.68s var(--e-out) both; }
+@keyframes kr-posArrow {
+  0%   { opacity: 0; transform: translateY(0.5em) scale(0.7); }
+  22%  { opacity: 1; transform: translateY(0) scale(1.1); }
+  34%  { transform: translateY(0) scale(1); }
+  68%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-0.35em) scale(0.95); }
+}
+
+/* --- THE RIVAL ROW --------------------------------------------------------
+   This is the entire replacement for the 200x320 eight-driver timing tower.
+   One row: the livery chip and name of the kart you are racing, and your
+   signed delta to it. ONE label slot, ONE format, ALWAYS signed — round 7
+   invented "LEAD 12.48", "GAP +0.13" and a labelled empty cell reading "GRID"
+   for the same slot in three different states. Negative means you are ahead
+   (green); positive means you are behind (red); "—" means there is nobody to
+   compare to, which is a fact, not a zero. */
+.kr-rel {
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: 0.62em 1fr auto;
+  align-items: center;
+  gap: 0.6em;
+  border-top: 1px solid rgba(255, 214, 170, 0.20);
+  padding-top: 0.72em;
+}
+.kr-rel-c {
+  width: 0.62em;
+  height: 0.62em;
+  border-radius: 50%;
+  background: var(--c, #8fa0bb);
+  box-shadow: 0 0 0 1.5px rgba(24, 13, 6, 0.88), 0 0 0.7vmin color-mix(in srgb, var(--c, #8fa0bb) 55%, transparent);
+}
+.kr-rel-n {
+  font-family: var(--fd);
+  font-size: var(--t2);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 244, 226, 0.9);
+  text-shadow: var(--ring-s);
+  /* No ellipsis, ever, on a roster whose maximum length we authored: the plate
+     is sized off the longest name in ROSTER ("BRAMBLE"). Round 1 shipped
+     "BRAMB…" and "MARLO…" in all ten review frames, which is the single most
+     visible "this is unfinished" tell a HUD can have. */
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+.kr-rel-v {
+  font-size: calc(var(--t3) * 0.8);
+  /* Widest real value is formatDelta's over-a-minute form, "+1:39.00":
+     sign + 6 tabular digits + colon + point. In `ch` that is ~7.4; at 4.0em
+     against the old face it was 6.7ch and the >60 s case overprinted the
+     rival's name. Fixed, so the plate cannot resize as the gap moves. */
+  width: 7.6ch;
+  flex: none;
+  text-align: right;
+  transition: color 0.3s var(--e-out);
+}
+.kr-rel.ahead .kr-rel-v { color: #7ef0a4; }
+.kr-rel.behind .kr-rel-v { color: #ff9a86; }
+.kr-rel.none .kr-rel-v { color: var(--dim); }
+
+/* --- MINIMAP — top-centre (§7: "bottom-centre or top-centre") ------------- */
+/* Bottom-centre put it on the kart and the vanishing point in every review
+   frame. §7 permits exactly two positions and top-right is not one of them,
+   so it stays here — smaller, pushed to the very top edge and out of the
+   forward sightline, and rebuilt inside as a two-tone ribbon. */
+.kr-map {
+  --accent: var(--sea-shallow);
+  --clip: var(--clip-b2);
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--map-w);
+  height: var(--map-h);
+}
+/* The well is inset by the ONE inner padding, like the item box's. */
+.kr-map .kr-well { position: absolute; inset: calc(var(--pad) * 0.6); overflow: hidden; }
+.kr-map canvas { display: block; width: 100%; height: 100%; }
+
+/* --- ITEM — bottom-left --------------------------------------------------- */
+
+.kr-item,
+.kr-speed { position: absolute; bottom: 0; height: var(--rail); }
+
+.kr-item { left: 0; width: var(--rail); --accent: var(--sky-warm); --clip: var(--clip-tr); }
+.kr-item.has-item { --accent: var(--item-tint, var(--sky-warm)); }
+.kr-item-frame {
+  position: absolute;
+  inset: 0;
+  transition: filter 0.3s var(--e-out);
+}
+/* the well: permanent, in every state — the SAME well idiom as the minimap */
+.kr-item-frame::after { content: ""; position: absolute; inset: 8%; }
+
+/* An empty slot advertises that it wants filling: one compositor-only opacity
+   animation on a rim laid exactly on the plate's own edge. It is a child
+   element rather than a pseudo because ::before is the plate body now. */
+.kr-item-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r);
+  clip-path: var(--clip);
+  background: rgba(255, 226, 186, 0.55);
+  opacity: 0;
+  animation: kr-slotPulse 3.6s var(--e-soft) infinite;
+  pointer-events: none;
+}
+.kr-item-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: inherit;
+  clip-path: var(--clip);
+  background: var(--plate-bg);
+}
+.kr-item.has-item .kr-item-pulse,
+.kr-item.spinning .kr-item-pulse { animation: none; opacity: 0; }
+@keyframes kr-slotPulse {
+  0%, 100% { opacity: 0.06; }
+  50%      { opacity: 0.42; }
+}
+
+.kr-item.has-item .kr-item-frame {
+  filter: var(--plate-shadow)
+          drop-shadow(0 0 1.4vmin color-mix(in srgb, var(--item-tint, #fff) 60%, transparent));
+}
+.kr-item.spinning .kr-item-frame {
+  filter: var(--plate-shadow) drop-shadow(0 0 1.8vmin rgba(255, 207, 107, 0.7));
+}
+.kr-item-icon {
+  position: absolute;
+  inset: 8%;
+  border-radius: calc(var(--r) * 0.6);
+  clip-path: var(--clip);
+  overflow: hidden;
+  transform-origin: 50% 56%;
+  transition: transform 0.12s var(--e-out), opacity 0.26s var(--e-out);
+}
+.kr-item-icon canvas { width: 100%; height: 100%; display: block; }
+/* THE EMPTY STATE. Round 7 shipped the empty slot at full opacity with a
+   solid gold diamond, i.e. visually identical in weight to a held item — you
+   could not tell at a glance whether you had something. Empty is now ghosted
+   and desaturated, and the saturated, full-weight plate is reserved
+   exclusively for an item you are actually holding. */
+.kr-item.empty .kr-item-icon { opacity: 0.34; filter: saturate(0.35) brightness(0.86); }
+.kr-item.spinning .kr-item-icon { transform: scaleY(1.08) scaleX(0.97); opacity: 0.9; }
+.kr-item-icon.land { animation: kr-itemLand 0.72s var(--e-spring) both; }
+@keyframes kr-itemLand {
+  0%   { transform: scale(1.36) rotate(-4deg); }
+  38%  { transform: scale(0.92) rotate(2deg); }
+  66%  { transform: scale(1.06) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.kr-item-count {
+  position: absolute;
+  right: -2%;
+  bottom: -2%;
+  min-width: 1.9em;
+  padding: 0.16em 0.36em 0.2em;
+  text-align: center;
+  border-radius: calc(var(--r) * 0.6);
+  font-size: var(--t2);
+  font-weight: 900;
+  color: var(--ink-warm);
+  text-shadow: none;   /* the ring is for cream on dark, not for ink on gold */
+  background: linear-gradient(180deg, #fff0c0, var(--gold));
+  box-shadow: 0 0 0 1.5px rgba(40, 22, 6, 0.75), 0 0.35vmin 1vmin rgba(22, 11, 4, 0.62);
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.24s var(--e-out), transform 0.34s var(--e-spring);
+}
+.kr-item.multi .kr-item-count { opacity: 1; transform: scale(1); }
+
+/* --- SPEEDOMETER — bottom-right ------------------------------------------ */
+.kr-speed {
+  right: 0;
+  width: calc(var(--rail) * 1.04);
+  transform-origin: 100% 100%;
+  --accent: var(--kerb-red);
+  /* The dial's resting scale, as a token. TouchControls.ts sets the widget to
+     scale(.82) to clear the thumb cluster; the tier pop below animates
+     `transform`, and an animation beats an inline or author rule, so on touch
+     the whole speedometer used to jump to full size for the half second of
+     every mini-turbo and snap back. The keyframes now multiply this token
+     instead of assuming 1, and the touch rule below sets it. */
+  --speed-s: 1;
+}
+/* Higher specificity than TouchControls' own `html[data-touch] .kr-speed`,
+   which is injected after this sheet — it must set the token, not just the
+   transform, or the pop reintroduces the jump. The VALUE is deliberately the
+   same .82 that rule uses; if that number ever changes, change it here too. */
+html[data-touch] .kr .kr-speed { --speed-s: 0.82; transform: scale(var(--speed-s)); }
+
+/* THE ITEM PLATE MOVES INTO THE TOP RAIL ON TOUCH.
+   It used to keep its desktop bottom-left home, justified by a comment saying
+   the floating stick "can safely overlap it for the moment a thumb is actually
+   down there". With auto-accelerate on and drift held, THE THUMB IS DOWN FOR
+   THE WHOLE LAP — and measured at the modal thumb landing (25 mm / 35 deg from
+   the left pivot) the plate is 100% occluded on both the iPhone 14 and the
+   15 Pro Max. The stick base is translucent; a thumb is not, and no z-index
+   fixes flesh.
+   Top-left rail, after the lap plate and after TouchControls' PAUSE/AUTO chips
+   (which start at env + 26vmin and run about 102 px), and clear of the minimap
+   at frame centre.
+
+   THE `min()` IS THE WHOLE POINT, and it replaces a hand-measured gap that did
+   not survive contact with a real phone. The first version was a bare
+   `calc(env(...) + 26vmin + 112px)`, justified by measuring one device: "the
+   plate lands at x 215-299 against the minimap's left edge at 353". That gap
+   is a coincidence of one viewport's vmin, one notch inset and one `--map-w`,
+   and all three vary. This plate is anchored to the LEFT EDGE while the minimap
+   is anchored to the CENTRE, so any change in width, inset or map size closes
+   the gap from one side without the other knowing. On a notched iPhone in
+   landscape the inset pushed the plate right until it slid under the map.
+
+   So the offset is now a preference, not a promise: take the laid-out position
+   OR the rightmost position that still clears the minimap by 12px, whichever
+   is further left. Collision is impossible by construction rather than by
+   arithmetic that has to be redone whenever a constant moves. */
+html[data-touch] .kr .kr-item {
+  bottom: auto;
+  top: env(safe-area-inset-top, 0px);
+  left: min(
+    calc(env(safe-area-inset-left, 0px) + 26vmin + 112px),
+    calc(50% - (var(--map-w) / 2) - 12px - var(--rail-top))
+  );
+  width: var(--rail-top);
+  height: var(--rail-top);
+  --clip: var(--clip-br);
+}
+/* THE TOP RAIL DOES NOT MIRROR, AND THAT IS THE POINT.
+   The obvious "mirror everything" put the AUTO/PAUSE chips and the item plate
+   at 26 vmin from the RIGHT edge, i.e. straight through the race timer, which
+   the HUD keeps top-right in both modes. Mirror what the THUMBS touch — the
+   steering source, the action cluster and the two plates the cluster would sit
+   on — and leave the read-only top rail where the HUD put it. Caught by
+   looking at a left-handed capture; nothing in the harnesses covers it, which
+   is exactly the division of labour CLAUDE.md describes.
+
+   What DOES have to move: the speedometer and the position plate. In
+   right-handed mode the speedometer is pushed left of the cluster and the
+   position plate sits at left-centre where only a translucent stick base ever
+   overlaps it. Mirrored, the cluster lands on the position plate — five opaque
+   discs over the live rival gap — and the bottom-right corner it vacated is
+   empty, which is where the speedometer belongs anyway. */
+html[data-touch][data-touch-hand="left"] .kr .kr-speed {
+  right: 0;
+  transform-origin: 100% 100%;
+}
+html[data-touch][data-touch-hand="left"] .kr .kr-pos {
+  left: auto;
+  right: 0;
+  align-items: flex-end;
+  --clip: var(--clip-bl);
+}
+
+.kr-speed-face { --clip: var(--clip-tl); position: absolute; inset: 0; transform-origin: 100% 100%; }
+.kr-speed-face canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* Peaked at 83 ms — five frames after the tier landed. A punch that arrives
+   five frames late is a second event. It now starts at full scale on the
+   trigger frame and springs back, which is also simply what a struck object
+   does. */
+.kr-speed.tier { animation: kr-dialPop 0.52s var(--e-spring) both; }
+@keyframes kr-dialPop {
+  0%   { transform: scale(calc(var(--speed-s) * 1.10)); }
+  100% { transform: scale(var(--speed-s)); }
+}
+/* THE RELEASE SURGE. On the face, not on .kr-speed — .kr-speed already owns
+   the tier pop and the touch scale, and two animations on one transform is how
+   a widget teleports. A hard kick plus a gold bloom on the plate: the boost is
+   the payoff and the instrument showing the speed it bought should say so. */
+.kr-speed-face.surge { animation: kr-dialSurge 0.62s var(--e-spring); }
+@keyframes kr-dialSurge {
+  0%   { transform: scale(1.16); filter: var(--plate-shadow) drop-shadow(0 0 2.2vmin rgba(255, 194, 74, 0.95)); }
+  34%  { transform: scale(0.985); }
+  100% { transform: scale(1); filter: var(--plate-shadow) drop-shadow(0 0 0 rgba(255, 194, 74, 0)); }
+}
+/* The readout sits in the dial's open bottom wedge, outside the needle sweep.
+   The digit box is a fixed three-character tabular cell and the digits are
+   CENTRED in it, so the number+unit cluster's optical centre does not walk
+   sideways 22 px between a two- and a three-digit speed. */
+.kr-speed-read {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8%;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.28em;
+  line-height: 0.86;
+}
+.kr-speed-n {
+  font-size: var(--t4);
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  /* Exactly three tabular digits, so the number+unit cluster's optical centre
+     does not walk sideways between 99 and 100 km/h. */
+  width: 3.05ch;
+}
+.kr-speed-n .kr-lock-l { justify-content: center; }
+.kr-speed-u {
+  font-family: var(--fd);
+  font-size: var(--t1);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-shadow: var(--ring-s);
+}
+.kr-speed.red .kr-speed-n .kr-lock-l { color: #ff9d6a; }
+.kr-speed.boosting .kr-speed-n .kr-lock-l { color: var(--gold); }
+
+/* --- TOAST: one slot, bottom-centre, on the bottom rail's own line -------- */
+
+.kr-bottom {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  width: clamp(140px, 26vmin, 380px);
+}
+.kr-toasts {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-items: end;
+  width: 100%;
+  pointer-events: none;
+}
+.kr-toast {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  padding: 0.55em 1em 0.6em;
+  white-space: nowrap;
+  font-family: var(--fd);
+  font-size: var(--t2);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--paper);
+  text-shadow: var(--ring-s);
+  --accent: var(--tc, var(--sky-warm));
+  animation: kr-toast 2.4s var(--e-out) both;
+}
+.kr-toast.out { animation: kr-toastOut 0.18s var(--e-soft) both; }
+.kr-toast i { font-style: normal; font-size: 1.1em; line-height: 1; color: var(--tc, var(--gold)); }
+@keyframes kr-toast {
+  0%   { opacity: 0; transform: translateY(1.8vmin) scale(0.9); }
+  8%   { opacity: 1; transform: translateY(0) scale(1.02); }
+  14%  { transform: translateY(0) scale(1); }
+  80%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-1.2vmin) scale(0.97); }
+}
+@keyframes kr-toastOut {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-0.9vmin) scale(0.94); }
+}
+
+/* ==========================================================================
+   Countdown
+   ==========================================================================
+   grid.png — the start line at 0:00.00, the highest-energy moment in the game
+   — captured with NOTHING at screen centre. The numeral was driven purely by
+   a transient bus event running a 1.02 s animation that ended at opacity 0,
+   so any beat that outlived its animation left the frame empty. The numeral
+   is now driven from `IRace.countdown` every frame and its animation HOLDS at
+   full opacity; the only fade is the one that plays as the whole countdown
+   layer retires on GO. */
+
+.kr-count {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  transition: opacity 0.45s var(--e-out);
+}
+.kr-count-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  transform: translateY(-5vh);
+}
+.kr-count-stage::before {
+  content: "";
+  position: absolute;
+  width: 66vmin;
+  height: 52vmin;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(22, 12, 5, 0.58) 0%,
+              rgba(22, 12, 5, 0.28) 46%, rgba(22, 12, 5, 0) 76%);
+  pointer-events: none;
+}
+.kr-count-vig {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 74% 64% at 50% 46%,
+              rgba(4, 7, 18, 0) 40%, rgba(4, 7, 18, 0.34) 76%, rgba(3, 5, 14, 0.6) 100%);
+  opacity: 0;
+  pointer-events: none;
+}
+.kr-count-vig.run { animation: kr-countVig 0.86s var(--e-out) both; }
+@keyframes kr-countVig {
+  0%   { opacity: 0; }
+  14%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* START LIGHTS. A three-lamp gantry above the numeral that fills in on each
+   beat and goes green on GO — the motif that tells you, with no text at all,
+   that a race is about to start. It is the frame's whole reason to look
+   alive at t = 0. */
+.kr-count-lights {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  margin-bottom: 0.6em;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.75em;
+  font-size: clamp(18px, 4.2vmin, 58px);
+  padding: 0.42em 0.62em;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(60, 44, 30, 0.78), rgba(20, 11, 5, 0.9));
+  box-shadow: 0 0 0 1.5px rgba(255, 214, 170, 0.30), 0 0.5vmin 1.6vmin rgba(20, 10, 4, 0.62);
+}
+.kr-count-lamp {
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #4a4038, #1c1510 70%);
+  box-shadow: inset 0 0 0 1.5px rgba(20, 11, 5, 0.9), inset 0 0.1em 0.16em rgba(255, 255, 255, 0.10);
+  transition: background 0.18s var(--e-out), box-shadow 0.18s var(--e-out);
+}
+.kr-count-lights.l1 .kr-count-lamp:nth-child(1),
+.kr-count-lights.l2 .kr-count-lamp:nth-child(-n + 2),
+.kr-count-lights.l3 .kr-count-lamp {
+  background: radial-gradient(circle at 38% 32%, #ff9a80, var(--kerb-red) 62%, #8c1c18 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(20, 11, 5, 0.9), 0 0 0.9em rgba(224, 69, 63, 0.75);
+}
+.kr-count-lights.go .kr-count-lamp {
+  background: radial-gradient(circle at 38% 32%, #d6ffd0, #4fd45e 60%, #17742e 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(20, 11, 5, 0.9), 0 0 1.1em rgba(90, 230, 110, 0.85);
+}
+.kr-count-lights.run { animation: kr-lamps 0.5s var(--e-spring) both; }
+@keyframes kr-lamps {
+  0%   { transform: translateX(-50%) scale(0.94); }
+  40%  { transform: translateX(-50%) scale(1.045); }
+  100% { transform: translateX(-50%) scale(1); }
+}
+
+/* The countdown is the ONE place the display gradient is used in gameplay. */
+.kr-count-n {
+  font-size: clamp(140px, 34vmin, 480px);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  opacity: 0;
+  --gold-glow:
+    drop-shadow(0 0.014em 0.012em rgba(26, 18, 8, 0.95))
+    drop-shadow(0 0.006em 0 rgba(26, 18, 8, 0.9))
+    drop-shadow(0 0 0.10em rgba(255, 170, 70, 0.55));
+}
+.kr-count-n.go {
+  font-size: clamp(110px, 27vmin, 380px);
+  letter-spacing: -0.02em;
+  --gold-ramp: linear-gradient(180deg, #fdfff6 4%, #d6ffd0 36%, #6fe06a 72%, #1d9c38 100%);
+  --gold-glow:
+    drop-shadow(0 0.014em 0.012em rgba(6, 26, 10, 0.95))
+    drop-shadow(0 0.006em 0 rgba(6, 26, 10, 0.9))
+    drop-shadow(0 0 0.12em rgba(60, 220, 90, 0.5));
+}
+/* HOLDS at opacity 1. A beat that outlives its own animation must still show
+   a numeral — that is the entire grid.png failure. The scale-and-fade §7 asks
+   for is the pop on each beat plus the retire on the layer. */
+.kr-count-n.run { animation: kr-countIn 0.62s var(--e-out) both; }
+.kr-count-n.go.run { animation: kr-goIn 0.7s var(--e-spring) both; }
+
+@keyframes kr-countIn {
+  0%   { opacity: 0; transform: scale(0.42); }
+  22%  { opacity: 1; transform: scale(1.22); }
+  42%  { transform: scale(0.95); }
+  62%  { transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes kr-goIn {
+  0%   { opacity: 0; transform: scale(0.44) rotate(-7deg); }
+  30%  { opacity: 1; transform: scale(1.18) rotate(2deg); }
+  52%  { transform: scale(0.98) rotate(0deg); }
+  100% { opacity: 1; transform: scale(1.03); }
+}
+
+/* An additive ring pinned to the numeral, scaling out on each tick. */
+.kr-count-ring {
+  position: absolute;
+  width: clamp(150px, 34vmin, 500px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 0.5vmin solid rgba(255, 226, 160, 0.85);
+  box-shadow: 0 0 2.4vmin rgba(255, 190, 90, 0.5);
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+.kr-count-ring.run { animation: kr-ring 0.9s var(--e-out) both; }
+@keyframes kr-ring {
+  0%   { opacity: 0.9; transform: scale(0.3); border-width: 1.2vmin; }
+  100% { opacity: 0; transform: scale(1.85); border-width: 0.1vmin; }
+}
+/* Three radial chevron ticks in the mini-turbo blue, on the ring's easing. */
+.kr-count-ticks {
+  position: absolute;
+  width: clamp(150px, 34vmin, 500px);
+  aspect-ratio: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+.kr-count-ticks svg { width: 100%; height: 100%; display: block; }
+.kr-count-ticks.run { animation: kr-ticks 0.86s var(--e-out) both; }
+@keyframes kr-ticks {
+  0%   { opacity: 0; transform: scale(0.72) rotate(-6deg); }
+  18%  { opacity: 0.95; transform: scale(1.02) rotate(0deg); }
+  100% { opacity: 0; transform: scale(1.42) rotate(4deg); }
+}
+
+
+/* ==========================================================================
+   Menus
+   ========================================================================== */
+
+.kr-screens { position: absolute; inset: 0; }
+
+.kr-screen {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(1.03);
+  transition: opacity 0.42s var(--e-soft), transform 0.55s var(--e-out), visibility 0s linear 0.5s;
+}
+.kr-screen.on {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  transition: opacity 0.4s var(--e-out), transform 0.6s var(--e-out), visibility 0s;
+}
+.kr-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 90% 80% at 50% 42%, rgba(26, 15, 9, 0.30), rgba(18, 10, 5, 0.80) 82%),
+    linear-gradient(200deg, rgba(58, 34, 22, 0.42), rgba(20, 11, 6, 0.62));
+  backdrop-filter: blur(14px) saturate(1.25) brightness(0.82);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25) brightness(0.82);
+}
+.kr-screen > .kr-screen-in {
+  position: relative;
+  width: min(150vmin, 94vw);
+  padding: calc(var(--safe) + env(safe-area-inset-top, 0px))
+           calc(var(--safe-x) + env(safe-area-inset-right, 0px))
+           calc(var(--safe) + env(safe-area-inset-bottom, 0px))
+           calc(var(--safe-x) + env(safe-area-inset-left, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* staged entrance for the children of an active screen */
+.kr-screen.on .kr-stage { animation: kr-stage 0.72s var(--e-out) both; }
+@keyframes kr-stage {
+  0%   { opacity: 0; transform: translateY(3.2vmin) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* --- title ---------------------------------------------------------------- */
+
+.kr-logo { width: min(112vmin, 88vw); height: auto; max-height: 45vh; object-fit: contain; display: block; }
+
+.kr-sub {
+  margin-top: -1vmin;
+  font-size: clamp(11px, 1.9vmin, 26px);
+  font-weight: 700;
+  letter-spacing: 0.52em;
+  text-indent: 0.52em;
+  text-transform: uppercase;
+  color: rgba(255, 226, 174, 0.86);
+  text-shadow: 0 0.1em 0.4em rgba(20, 10, 4, 0.9);
+}
+
+.kr-prompt {
+  margin-top: 4.5vmin;
+  font-size: clamp(12px, 2.1vmin, 28px);
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  text-transform: uppercase;
+  color: var(--paper);
+  animation: kr-breathe 2.4s var(--e-soft) infinite;
+  text-shadow: 0 0.1em 0.35em rgba(20, 10, 4, 0.9);
+}
+@keyframes kr-breathe {
+  0%, 100% { opacity: 0.42; transform: scale(0.99); }
+  50%      { opacity: 1; transform: scale(1.01); }
+}
+
+/* DEFECT D6 — the touch onboarding row.
+   Three miniature renderings of the ACTUAL controls, at their actual colours,
+   one word each at >= 14 px and full opacity. It replaces a 9 px line at 44%
+   opacity that named the controls without showing where any of them were.
+   Nothing to read; the shapes are the shapes that are about to be on screen. */
+.kr-glyphs {
+  display: flex;
+  gap: clamp(14px, 3.4vmin, 40px);
+  margin-top: 1.6vmin;
+  align-items: flex-start;
+}
+.kr-glyphs:empty { display: none; }
+.kr-gl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: clamp(14px, 1.9vmin, 20px);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(248, 242, 230, 0.86);
+}
+.kr-gl > span {
+  position: relative;
+  width: clamp(38px, 6.4vmin, 62px);
+  height: clamp(38px, 6.4vmin, 62px);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: clamp(8px, 1.35vmin, 13px);
+  letter-spacing: 0.05em;
+  color: #f4f7fb;
+  border: 2px solid rgba(255, 255, 255, 0.34);
+  background: radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.16), rgba(9, 15, 27, 0.52) 72%);
+}
+.kr-gl-stick i,
+.kr-gl-stick b { position: absolute; border-radius: 50%; }
+.kr-gl-stick i { inset: 0; border: 2px solid rgba(255, 255, 255, 0.42); }
+.kr-gl-stick b {
+  width: 42%; height: 42%; left: 46%; top: 29%;
+  background: radial-gradient(circle at 40% 35%, #fff, #ffd98a 55%, #f0a93c 100%);
+}
+/* The same blue the DRIFT button and the mini-turbo sparks use — the glyph is
+   the control, so it cannot be a different colour from the control. */
+.kr-gl-drift {
+  background: radial-gradient(circle at 50% 36%, rgba(120, 220, 255, 0.42), rgba(12, 52, 84, 0.62) 72%) !important;
+  border-color: rgba(150, 230, 255, 0.72) !important;
+}
+.kr-gl-item { font-size: clamp(16px, 2.6vmin, 26px) !important; font-weight: 400; }
+
+/* 46 px tall, because it is a real target on a phone — but narrow, because it
+   must not compete with "Tap to Start". A player who never presses this gets a
+   good default; a player who needs another scheme must be able to find it. */
+.kr-btn-controls {
+  margin-top: 1.4vmin;
+  min-height: 46px;
+  padding: 0 1.6em;
+  font-size: clamp(11px, 1.6vmin, 15px);
+  opacity: 0.82;
+}
+
+.kr-hint {
+  margin-top: 2.4vmin;
+  font-size: clamp(9px, 1.4vmin, 18px);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: rgba(248, 242, 230, 0.44);
+  text-transform: uppercase;
+}
+.kr-hint b {
+  display: inline-block;
+  margin: 0 0.25em;
+  padding: 0.18em 0.5em;
+  border-radius: 0.4em;
+  background: rgba(255, 246, 228, 0.10);
+  border: 1px solid rgba(255, 246, 228, 0.2);
+  color: rgba(255, 236, 200, 0.9);
+  font-weight: 800;
+}
+
+/* --- headline used by select / pause / results ----------------------------- */
+
+.kr-title {
+  font-size: clamp(24px, 5.4vmin, 74px);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* --- roster --------------------------------------------------------------- */
+
+.kr-roster {
+  margin-top: 3vmin;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(8px, 1.6vmin, 22px);
+  width: 100%;
+}
+@media (max-aspect-ratio: 1/1) { .kr-roster { grid-template-columns: repeat(2, 1fr); } }
+
+.kr-card {
+  position: relative;
+  pointer-events: auto;
+  cursor: pointer;
+  padding: clamp(8px, 1.5vmin, 20px);
+  border-radius: calc(var(--r) * 1.2);
+  background: linear-gradient(180deg, rgba(56, 40, 28, 0.66), rgba(24, 14, 8, 0.84));
+  border: 1px solid rgba(255, 240, 214, 0.16);
+  box-shadow: 0 0.8vmin 2.4vmin rgba(20, 10, 4, 0.5), inset 0 0.12vmin 0 rgba(255, 246, 228, 0.2);
+  transform-origin: 50% 100%;
+  transition: transform 0.42s var(--e-spring), box-shadow 0.34s var(--e-out),
+              border-color 0.34s var(--e-out), filter 0.34s var(--e-out);
+  filter: saturate(0.55) brightness(0.8);
+  overflow: hidden;
+}
+.kr-card:hover { filter: saturate(0.85) brightness(0.95); transform: translateY(-0.5vmin); }
+.kr-card.sel {
+  filter: none;
+  transform: translateY(-1.4vmin) scale(1.045);
+  border-color: color-mix(in srgb, var(--c) 70%, rgba(255, 240, 214, 0.4));
+  box-shadow: 0 0 3vmin color-mix(in srgb, var(--c) 45%, transparent),
+              0 1.4vmin 3.4vmin rgba(20, 10, 4, 0.6),
+              inset 0 0.12vmin 0 rgba(255, 246, 228, 0.3);
+}
+.kr-card-chip {
+  position: relative;
+  height: clamp(38px, 7vmin, 96px);
+  border-radius: calc(var(--r) * 0.9);
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 46%),
+    repeating-linear-gradient(118deg, rgba(255, 255, 255, 0.11) 0 6%, rgba(0, 0, 0, 0) 6% 13%),
+    linear-gradient(170deg, color-mix(in srgb, var(--c) 88%, #ffffff),
+                    var(--c) 46%, color-mix(in srgb, var(--c) 62%, #1c1209));
+  box-shadow: inset 0 0 2vmin rgba(0, 0, 0, 0.35), inset 0 0.12vmin 0 rgba(255, 255, 255, 0.45);
+  overflow: hidden;
+}
+.kr-card-chip::after {
+  /* soft floor shade — a radial here leaves a hard seam where it starts */
+  content: "";
+  position: absolute;
+  inset: 30% 0 0 0;
+  background: linear-gradient(180deg, rgba(22, 12, 6, 0), rgba(22, 12, 6, 0.34));
+}
+.kr-card-init {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(24px, 4.6vmin, 62px);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: rgba(255, 252, 244, 0.34);
+  text-shadow: 0 0.05em 0.12em rgba(22, 12, 6, 0.45);
+  mix-blend-mode: overlay;
+  z-index: 1;
+}
+.kr-card-name {
+  margin-top: 1vmin;
+  font-size: clamp(12px, 2.1vmin, 28px);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--paper);
+}
+.kr-card-you {
+  position: absolute;
+  top: clamp(8px, 1.5vmin, 20px);
+  right: clamp(8px, 1.5vmin, 20px);
+  padding: 0.2em 0.55em 0.24em;
+  border-radius: 0.5em;
+  font-size: clamp(8px, 1.15vmin, 15px);
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  color: var(--ink-2);
+  background: linear-gradient(180deg, #fff2c4, #ffc247);
+}
+
+.kr-stats { margin-top: 1vmin; display: flex; flex-direction: column; gap: 0.55vmin; }
+.kr-stat { display: grid; grid-template-columns: 4.6em 1fr; align-items: center; gap: 0.6em; }
+.kr-stat span {
+  font-size: clamp(7px, 1.05vmin, 14px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(248, 242, 230, 0.5);
+}
+.kr-bar {
+  position: relative;
+  height: clamp(4px, 0.75vmin, 10px);
+  border-radius: 999px;
+  background: rgba(255, 246, 228, 0.10);
+  box-shadow: inset 0 0.1vmin 0.2vmin rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.kr-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 70%, #ffffff), var(--c));
+  box-shadow: 0 0 0.8vmin color-mix(in srgb, var(--c) 60%, transparent);
+  transition: width 0.7s var(--e-out);
+}
+.kr-screen.on .kr-bar i { width: var(--v); }
+
+/* --- buttons -------------------------------------------------------------- */
+
+.kr-menu-list { margin-top: 3.2vmin; display: flex; flex-direction: column; gap: 1.1vmin; width: min(46vmin, 80vw); }
+.kr-btn {
+  pointer-events: auto;
+  cursor: pointer;
+  position: relative;
+  padding: 0.72em 1.4em 0.78em;
+  border-radius: 999px;
+  font-size: clamp(13px, 2.3vmin, 30px);
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(248, 242, 230, 0.82);
+  background: linear-gradient(180deg, rgba(64, 46, 32, 0.7), rgba(26, 15, 9, 0.88));
+  border: 1px solid rgba(255, 240, 214, 0.2);
+  box-shadow: 0 0.6vmin 1.8vmin rgba(20, 10, 4, 0.5), inset 0 0.12vmin 0 rgba(255, 246, 228, 0.22);
+  transition: transform 0.3s var(--e-spring), color 0.24s var(--e-out),
+              background 0.24s var(--e-out), box-shadow 0.24s var(--e-out), border-color 0.24s var(--e-out);
+  overflow: hidden;
+}
+.kr-btn:hover, .kr-btn.sel {
+  color: var(--ink-2);
+  background: linear-gradient(180deg, #fff3cc, #ffc84e 58%, #f09a1c);
+  border-color: rgba(255, 236, 190, 0.9);
+  box-shadow: 0 0 2.6vmin rgba(255, 196, 90, 0.5), 0 0.8vmin 2vmin rgba(20, 10, 4, 0.5),
+              inset 0 0.14vmin 0 rgba(255, 255, 255, 0.7);
+  transform: scale(1.035);
+}
+.kr-btn:active { transform: scale(0.985); }
+
+/* --- results -------------------------------------------------------------- */
+
+.kr-results-grid {
+  margin-top: 2.4vmin;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: clamp(10px, 2.4vmin, 34px);
+  width: 100%;
+  align-items: start;
+}
+@media (max-aspect-ratio: 1/1) { .kr-results-grid { grid-template-columns: 1fr; } }
+
+.kr-standings { display: flex; flex-direction: column; gap: 0.55vmin; }
+.kr-row {
+  display: grid;
+  grid-template-columns: 3.1em 0.9em 1fr auto;
+  align-items: center;
+  gap: 0.9em;
+  padding: 0.5em 1em 0.55em;
+  border-radius: calc(var(--r) * 0.7);
+  background: linear-gradient(180deg, rgba(56, 40, 28, 0.55), rgba(24, 14, 8, 0.72));
+  border: 1px solid rgba(255, 240, 214, 0.12);
+  opacity: 0;
+}
+.kr-screen.on .kr-row { animation: kr-rowIn 0.6s var(--e-out) both; animation-delay: var(--d); }
+/* Rebuilt rows (a straggler crossed and the board reordered) must not re-deal
+   the whole entrance animation — the board is already on screen and being read. */
+.kr-screen.on .kr-standings.settled .kr-row { animation: none; }
+@keyframes kr-rowIn {
+  0%   { opacity: 0; transform: translateX(-3vmin) scale(0.97); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+.kr-row.you {
+  background: linear-gradient(180deg, rgba(72, 56, 22, 0.7), rgba(28, 20, 8, 0.82));
+  border-color: rgba(255, 214, 120, 0.62);
+  box-shadow: 0 0 2vmin rgba(255, 196, 90, 0.28), inset 0 0.12vmin 0 rgba(255, 246, 228, 0.3);
+}
+.kr-row-p {
+  font-size: clamp(14px, 2.6vmin, 34px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--gold);
+}
+.kr-row-p sup { font-size: 0.52em; font-weight: 800; margin-left: 0.08em; }
+.kr-row-c { width: 0.9em; height: 0.9em; border-radius: 50%; background: var(--c);
+            box-shadow: 0 0 0.8vmin color-mix(in srgb, var(--c) 70%, transparent),
+                        inset 0 0.1em 0 rgba(255, 255, 255, 0.45); }
+.kr-row-n {
+  font-size: clamp(12px, 2.1vmin, 27px);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.kr-row-t {
+  font-size: clamp(11px, 1.85vmin, 24px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: rgba(248, 242, 230, 0.7);
+}
+
+.kr-laps { display: flex; flex-direction: column; gap: 0.6vmin; }
+.kr-lapline {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.5em 0.9em 0.55em;
+  border-radius: calc(var(--r) * 0.8);
+  background: linear-gradient(180deg, rgba(56, 40, 28, 0.5), rgba(24, 14, 8, 0.68));
+  border: 1px solid rgba(255, 240, 214, 0.1);
+}
+.kr-lapline b { font-size: clamp(9px, 1.35vmin, 18px); font-weight: 800; letter-spacing: 0.2em;
+                text-transform: uppercase; color: rgba(248, 242, 230, 0.55); }
+.kr-lapline em { font-style: normal; font-size: clamp(13px, 2.2vmin, 29px); font-weight: 800;
+                 font-variant-numeric: tabular-nums; }
+.kr-lapline.best { border-color: rgba(255, 214, 120, 0.65); }
+.kr-lapline.best em { color: var(--gold); }
+.kr-lapline-total {
+  margin-top: 0.6vmin;
+  background: linear-gradient(180deg, rgba(76, 55, 38, 0.62), rgba(30, 18, 11, 0.8));
+  border-color: rgba(255, 240, 214, 0.24);
+}
+.kr-lapline-total b { color: rgba(255, 226, 174, 0.8); }
+
+.kr-best {
+  margin-bottom: 0.4vmin;
+  padding: 0.9em 1.1em 1em;
+  border-radius: calc(var(--r) * 1.1);
+  text-align: center;
+  background: linear-gradient(180deg, rgba(78, 60, 22, 0.72), rgba(26, 19, 8, 0.86));
+  border: 1px solid rgba(255, 214, 120, 0.6);
+  box-shadow: 0 0 2.6vmin rgba(255, 196, 90, 0.28), inset 0 0.12vmin 0 rgba(255, 246, 228, 0.32);
+}
+.kr-best b { display: block; font-size: clamp(9px, 1.3vmin, 17px); font-weight: 800;
+             letter-spacing: 0.3em; text-indent: 0.3em; text-transform: uppercase;
+             color: rgba(255, 226, 170, 0.85); }
+.kr-best em { display: block; margin-top: 0.18em; font-style: normal;
+              font-size: clamp(22px, 4.4vmin, 58px); font-weight: 900; letter-spacing: -0.01em;
+              font-variant-numeric: tabular-nums; color: #fff3d0;
+              text-shadow: 0 0 1.6vmin rgba(255, 190, 90, 0.6), 0 0.06em 0.2em rgba(20, 10, 4, 0.7); }
+
+/* --- pause ---------------------------------------------------------------- */
+
+.kr-pause-badge {
+  font-size: clamp(9px, 1.4vmin, 18px);
+  font-weight: 800;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  text-transform: uppercase;
+  color: rgba(255, 226, 174, 0.7);
+  margin-bottom: 1vmin;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kr *, .kr *::before, .kr *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --- pause: the full running order -----------------------------------------
+   The eight-driver order that used to be a permanent 200x320 tower on the
+   outside of every right-hand corner lives HERE and on the results screen.
+   Same rows, same type, same rules as the results board — one standings
+   object in the game, shown in the two places where you can read eight rows. */
+
+.kr-pause-grid {
+  margin-top: 2.2vmin;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: clamp(10px, 2.6vmin, 36px);
+  width: 100%;
+  align-items: start;
+}
+@media (max-aspect-ratio: 1/1) { .kr-pause-grid { grid-template-columns: 1fr; } }
+.kr-pause-grid .kr-menu-list { margin-top: 0; width: 100%; }
+.kr-order-title {
+  font-family: var(--fd);
+  font-size: clamp(9px, 1.35vmin, 18px);
+  font-weight: 800;
+  letter-spacing: 0.36em;
+  text-indent: 0.36em;
+  text-transform: uppercase;
+  color: rgba(255, 226, 174, 0.72);
+  margin-bottom: 1vmin;
+}
+
+/* ===========================================================================
+ *  SHORT VIEWPORTS — a phone held in landscape, which is the only way this
+ *  game can be played on one.
+ * ===========================================================================
+ *
+ *  Everything above sizes with `vmin` and a `clamp()` floor, which is right on
+ *  a desktop and quietly wrong here. In landscape on a phone `vmin` is the
+ *  SHORT edge — 390px on an iPhone 14, 375px on an SE — so every one of those
+ *  clamps bottoms out at its minimum simultaneously, and the sum of the
+ *  minimums is taller than the screen. Before this block, measured at 844x390:
+ *
+ *      results   486px of content in 390px  — overflowed by 96px
+ *      pause     421px                      — overflowed by 31px
+ *      select    384px on a 375px SE        — overflowed by 9px
+ *
+ *  and on results BOTH BUTTONS sat entirely below the fold (tops at 387px and
+ *  431px), so a player who finished a race on a phone could not continue and
+ *  could not restart. The only responsive rule this file previously had for
+ *  these screens was `@media (max-aspect-ratio: 1/1)`, which matches PORTRAIT
+ *  and therefore never fires on the orientation the game actually runs in.
+ *
+ *  Two layers, and both earn their place:
+ *
+ *  1. The scroll clamp below is a SAFETY NET. It makes it structurally
+ *     impossible for a control to be unreachable on a viewport nobody thought
+ *     to test, including future ones. It is not the fix.
+ *  2. The compression is the fix — it stops the scroll from ever being needed
+ *     at the sizes that actually exist.
+ */
+
+/* `.on` IS LOAD-BEARING HERE. Every `.kr-screen` stays in the DOM and stays
+   displayed; only `.on` marks the active one. Scoping this to `.kr-screen`
+   alone made EVERY inactive screen a full-viewport scroller with
+   `touch-action: pan-y`, and the title screen also keeps a stale inline
+   `pointer-events: auto` from the last time it was shown. On a real phone the
+   browser arbitrates a pan gesture on that scroller before the page ever sees
+   the touch, so DRIFT and the item button stopped responding mid-race. Every
+   harness still passed, because CDP-dispatched touch events bypass gesture
+   arbitration — the bug is invisible to synthetic input and obvious to a
+   thumb. */
+.kr-screen.on > .kr-screen-in {
+  max-height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* `body` sets `touch-action: none` so the game surface cannot be pinched or
+     panned. A scroller nested inside that has to opt back in explicitly or a
+     thumb drag does nothing at all — the content is reachable in the layout
+     and unreachable with a finger, which is the worse failure of the two. */
+  touch-action: pan-y;
+  scrollbar-width: none;
+}
+.kr-screen.on > .kr-screen-in::-webkit-scrollbar { display: none; }
+
+@media (max-height: 520px) {
+  .kr-screen.on > .kr-screen-in {
+    width: min(150vmin, 97vw);
+    /* the vertical safe padding is the single largest fixed cost on a screen
+       this short; the horizontal one keeps its full value because width is the
+       axis we have plenty of */
+    padding-top: calc(var(--safe) * 0.42 + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(var(--safe) * 0.42 + env(safe-area-inset-bottom, 0px));
+  }
+
+  .kr-title { font-size: clamp(15px, 4.4vmin, 30px); letter-spacing: 0.1em; }
+  .kr-sub { font-size: clamp(9px, 1.6vmin, 14px); }
+
+  /* Eight racers on one row instead of two. 844px of width divided eight ways
+     is a narrower card than the desktop layout wants, but width is exactly what
+     a landscape phone has spare, and it removes a whole card's height. */
+  .kr-roster { margin-top: 1.1vmin; grid-template-columns: repeat(8, 1fr); gap: clamp(4px, 0.9vmin, 10px); }
+  .kr-card { padding: clamp(4px, 0.9vmin, 10px); }
+  .kr-card-chip { height: clamp(20px, 4.4vmin, 34px); }
+  .kr-card-name { font-size: clamp(8px, 1.4vmin, 13px); }
+  /* Eight-up makes each card ~87px wide, and at that width the `3.4em` label
+     column consumed the row and left the bar with nothing — the card showed
+     SPEED / ACCEL / HANDLING / WEIGHT as four words with no bars beside them,
+     which is strictly less information than the bars alone. Drop the words and
+     let each bar have the full width: length and colour still say everything
+     the row was there to say, and the labels are in the same order on every
+     card so the position carries the meaning. */
+  .kr-stats { margin-top: 0.5vmin; gap: 0.34vmin; }
+  .kr-stat { grid-template-columns: 1fr; gap: 0; }
+  .kr-stat span { display: none; }
+  .kr-bar { height: clamp(3px, 0.9vmin, 7px); }
+
+  /* Results and pause are standings-driven: eight rows are the bulk of the
+     height, so the row is where the saving has to come from. */
+  .kr-standings { gap: 0.3vmin; }
+  .kr-row { padding: 0.28em 0.7em 0.3em; gap: 0.6em; }
+  .kr-row-p { font-size: clamp(11px, 2vmin, 18px); }
+
+  .kr-menu-list { margin-top: 1.1vmin; gap: 0.6vmin; width: min(52vmin, 62vw); }
+  .kr-btn { padding: 0.46em 1.1em 0.5em; font-size: clamp(11px, 2vmin, 17px); }
+
+  /* Both of these are two-column on a wide screen and collapse to one column
+     in the PORTRAIT rule above. In landscape they must stay two-up: side by
+     side is how the height gets paid for. */
+  .kr-results-grid, .kr-pause-grid { grid-template-columns: 1.15fr 1fr; }
+
+  /* The staged entrance translates children downward from 3.2vmin before
+     settling. On a screen with no spare height that briefly pushes the bottom
+     control off the end, so the travel is cut rather than the animation. */
+  .kr-screen.on .kr-stage { animation-duration: 0.5s; }
+}
+
+/* Very short — a small phone in landscape with browser chrome showing. */
+@media (max-height: 400px) {
+  .kr-title { font-size: clamp(13px, 3.8vmin, 22px); }
+  .kr-card-chip { height: clamp(16px, 3.6vmin, 26px); }
+  .kr-row { padding: 0.2em 0.6em 0.22em; }
+  .kr-btn { padding: 0.38em 1em 0.42em; }
+  .kr-roster { margin-top: 0.7vmin; }
+  .kr-menu-list { margin-top: 0.7vmin; }
+}
+
+/* Keep global game controls out of the control settings sheet. */
+html[data-kc-open] .kart-audio-toggle, html[data-kc-open] .rp-toggle { display: none !important; }

@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.local/
+certs/
+运行日志.txt
+*.log
+.DS_Store
+.env
+.env.*
+*.key
+*.pem
+*.cer
+*.csr
+*.p12
+*.mobileconfig
+coverage/

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f3f5f7">
+<title>卡丁王者 · 体感手柄</title>
+<link rel="stylesheet" href="controller.css">
+</head>
+<body>
+<div class="controller-shell">
+<header class="topbar"><span id="connection" role="status">连接中</span><button id="settings-open" class="mini" aria-label="打开设置">设置</button></header>
+<main class="pad-body">
+<section class="grip left-grip" aria-label="油门与后退">
+<button id="brake" data-hold="brake" class="face brake">后退</button>
+<button id="accel" data-hold="accel" class="face accel">油门</button>
+</section>
+<section class="console" aria-label="体感转向">
+<button id="motion" class="motion-start">启用体感</button>
+<div class="tilt-gauge" aria-hidden="true"><output id="angle">0°</output><div class="meter"><i id="needle"></i></div></div>
+<button id="calibrate" class="mini calibrate">校准中位</button>
+<label class="auto-toggle"><span>自动油门</span><input id="auto" type="checkbox" checked><span class="switch"></span></label>
+<p id="hint" role="status" hidden></p>
+</section>
+<section class="grip right-grip" aria-label="漂移与道具">
+<button id="item" data-tap="item" class="face item">道具</button>
+<button id="drift" data-hold="drift" class="face drift">漂移</button>
+</section>
+</main>
+</div>
+<dialog id="settings-dialog"><div class="dialog-head"><h2>设置</h2><button id="settings-close" class="mini">完成</button></div><label class="range-label">转向幅度 <input id="range" aria-label="转向幅度" type="range" min="10" max="40" value="26"><output id="range-value">26°</output></label><label class="check-label"><input id="invert" type="checkbox">反向转向</label><small id="latency">连接耗时：待测</small></dialog>
+<div id="rotate-screen" class="rotate-screen"><span class="rotate-icon" aria-hidden="true">↻</span><h1>请横过手机</h1></div>
+<script type="module" src="controller.mjs"></script>
+</body></html>
