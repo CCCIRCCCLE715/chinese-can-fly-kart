@@ -24,6 +24,8 @@
     "ws": "^8.22.0"
   },
   "devDependencies": {
+    "@emnapi/core": "1.11.1",
+    "@emnapi/runtime": "1.11.1",
     "@types/three": "^0.185.1",
     "puppeteer": "^25.3.0",
     "typescript": "^7.0.2",
