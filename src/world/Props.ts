@@ -31,10 +31,10 @@ export const PAL = {
   foam: 0xeefaff,
   stone: 0xa8927a,
   roofTile: 0xb5643f,
-  skyWarm: 0xffd0a0,
+  skyWarm: 0xd7edf5,
   kerbRed: 0xe0453f,
   kerbWhite: 0xf2ece0,
-  pastels: [0xf2c9a0, 0xe8a5a0, 0xf5e2b0, 0xa9c8d4, 0xdcb8d8, 0xf0d9bf, 0xcfd9c0],
+  pastels: [0xefab87, 0xef8da6, 0xf3d58e, 0x70aed7, 0xb69ad0, 0xf0d9bf, 0x8fcbb3],
   shutters: [0x3f6b74, 0x2f5d43, 0x8a4433, 0x5a5f8a, 0x77502f],
   boatHulls: [0xf2ece0, 0xe0453f, 0x2f6ba0, 0x2f5d43, 0xf5e2b0, 0x3f3f4a],
   clothes: [0xf2ece0, 0xa9c8d4, 0xe8a5a0, 0xf5e2b0, 0xdcb8d8, 0x9fc0a8],
@@ -802,8 +802,8 @@ export class TexLib {
       g.letterSpacing = '10px';
       g.strokeStyle = 'rgba(60,20,16,0.55)';
       g.lineWidth = 7;
-      g.strokeText('落日湾', size / 2, hh * 0.4);
-      g.fillText('落日湾', size / 2, hh * 0.4);
+      g.strokeText('樱花町', size / 2, hh * 0.4);
+      g.fillText('樱花町', size / 2, hh * 0.4);
       // the rest of the sheet is plain cloth for the fold-over
       g.fillStyle = '#c8382f';
       g.fillRect(0, hh, size, size - hh);
@@ -4014,8 +4014,8 @@ export class MatLib {
     const nOnly = (n: number) => (m: any) => {
       if (m.normalScale) m.normalScale.set(n, n);
     };
-    this.wall = this.shared('stucco', 'scenery-wall', vcN(2.1)) ?? this.std(T.plaster(), { vertexColors: true }, 2.1);
-    this.roof = this.shared('roof-tile', 'scenery-roof', vcN(1.9)) ?? this.std(T.roofTile(), { vertexColors: true }, 1.9);
+    this.wall = this.shared('stucco', 'scenery-wall', vcN(0.85)) ?? this.std(T.plaster(), { vertexColors: true }, 0.85);
+    this.roof = this.shared('roof-tile', 'scenery-roof', vcN(0.8)) ?? this.std(T.roofTile(), { vertexColors: true }, 0.8);
     this.trim = this.shared('marble', 'scenery-trim', vcN(1.5)) ?? this.std(T.stone(), { vertexColors: true }, 1.5);
     // The village had ONE surface response across every wall, roof and tower,
     // which is why wide.png reads as a single extruded mass: at a 14° sun a
@@ -5077,7 +5077,7 @@ export function bannerArchGeo(span: number, height: number): { struct: THREE.Buf
  * from a top rail that edge is VERTICAL — so the original code swapped the
  * plane's u and v wholesale and then sampled the albedo through the same
  * swapped coordinate. Canvas X therefore mapped to the banner's height and
- * canvas Y to its width: "落日湾" was being drawn sideways, crushed into a
+ * canvas Y to its width: "樱花町" was being drawn sideways, crushed into a
  * strip a tenth of the banner wide, on a ribbon 1.05 m tall over a 28 m span.
  * Which is why there is no readable banner anywhere in the round-1 set, and why
  * the arch reads as a bare telegraph crossbar.

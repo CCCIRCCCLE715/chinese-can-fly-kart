@@ -11,6 +11,7 @@ export class PhoneController {
   private ctx:Ctx|null=null;
   private remotePaused=false;
   private wasActive=false;
+  private retry:ReturnType<typeof setTimeout>|null=null;
   constructor() {
     const style=document.createElement('style');style.textContent=`.rp-toggle{position:fixed;right:20px;top:100px;z-index:10010;background:#172233e8;color:#ffe1a0;border:1px solid #8a7651;border-radius:12px;padding:10px 15px;font:600 14px system-ui;cursor:pointer}.rp-overlay{position:fixed;inset:0;z-index:10020;background:#07101be8;display:none;align-items:center;justify-content:center;padding:22px;font-family:system-ui;color:#f6f7fa}.rp-overlay.open{display:flex}.rp-card{width:min(860px,95vw);max-height:90vh;overflow:auto;border:1px solid #536075;background:#152033;border-radius:20px;padding:24px}.rp-card h2{margin:0 0 10px;font-size:25px}.rp-card p{line-height:1.7;color:#c2cbd9}.rp-pair{display:grid;grid-template-columns:1fr 1fr;gap:24px}.rp-pair img{width:180px;height:180px;border-radius:12px}.rp-card a{color:#ffd58c;overflow-wrap:anywhere}.rp-card button{background:#ffd078;border:0;border-radius:10px;padding:10px 18px;font:600 15px system-ui;cursor:pointer}.rp-status{background:#0c1420;padding:12px;border-radius:10px;margin:12px 0;color:#85e3b9}.rp-close{float:right}.rp-card small{color:#b2bfd1}@media(max-width:600px){.rp-pair{grid-template-columns:1fr}.rp-toggle{top:100px;right:12px}}`;document.head.append(style);
     this.toggle=document.createElement('button');this.toggle.className='rp-toggle';this.toggle.textContent='手机手柄';this.toggle.style.display='none';document.body.append(this.toggle);
@@ -28,23 +29,36 @@ export class PhoneController {
       this.panel.classList.remove('open');
       if(this.wasActive&&this.remotePaused){this.ctx?.race.setPaused(false);this.remotePaused=false;}
     };
-    if(location.hostname==='127.0.0.1'||location.hostname==='localhost')this.start().catch(()=>{});
+    if(location.hostname==='127.0.0.1'||location.hostname==='localhost')this.start().catch(()=>this.reconnect());
   }
   private async start() {
-    const response=await fetch('/session');if(!response.ok)return;this.session=await response.json();this.toggle.style.display='block';
+    const response=await fetch('/session');if(!response.ok)throw new Error('配对服务暂不可用');this.session=await response.json();this.toggle.style.display='block';
     for(const [cls,src] of [['.rp-setup-qr',this.session.setupQr],['.rp-controller-qr',this.session.qr]])this.panel.querySelector<HTMLImageElement>(cls)!.src=src;
     for(const [cls,url] of [['.rp-setup-link',this.session.setup],['.rp-controller-link',this.session.controller]])this.panel.querySelector<HTMLAnchorElement>(cls)!.href=url;
     this.connect();
+  }
+  private reconnect() {
+    if(this.retry!==null)return;
+    this.badge.textContent='电脑连接中断，正在重新连接…';
+    this.toggle.textContent='手机手柄 · 重连中';
+    this.retry=setTimeout(()=>{this.retry=null;this.start().catch(()=>this.reconnect());},1500);
+  }
+  private showStatus(active=false) {
+    this.badge.textContent=active?'已连接 · 体感驾驶中':this.state.connected?'手机已连接 · 等待体感输入':'等待手机连接';
+    this.toggle.textContent=this.state.connected?'手机手柄 · 已连接':'手机手柄';
   }
   private connect() {
     const s=this.session;this.ws=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/link?role=host&id=${s.id}&key=${s.hostToken}`);
     this.ws.onmessage=e=>{let p;try{p=JSON.parse(e.data);}catch{return;}if(!p||typeof p!=='object')return;
       if(p.type==='input')this.state.receive(p as RemotePacket,performance.now());
       else if(p.type==='ping')this.ws?.send(JSON.stringify({type:'pong',id:p.id}));
-      else if(p.type==='status'&&!p.connected)this.state.disconnect();
+      else if(p.type==='status'){
+        if(p.connected)this.state.connected=true;else this.state.disconnect();
+        this.showStatus();
+      }
       else if(p.type==='stale'){this.state.markStale();}
     };
-    this.ws.onclose=()=>{this.state.disconnect();this.toggle.textContent='手机手柄 · 连接中断';};
+    this.ws.onclose=()=>{this.state.disconnect();this.reconnect();};
     this.ws.onerror=()=>{};
   }
   read(ctx:Ctx) {
@@ -60,7 +74,7 @@ export class PhoneController {
       if(this.remotePaused){ctx.race.setPaused(false);this.remotePaused=false;}
     }
     this.wasActive=result.active;
-    if(performance.now()-this.pulseAt>200){this.pulseAt=performance.now();this.badge.textContent=result.active?'已连接 · 体感驾驶中':this.state.connected?'已连接 · 等待体感':'等待手机连接';this.toggle.textContent=result.active?'手机手柄 · 已连接':'手机手柄';}
+    if(performance.now()-this.pulseAt>200){this.pulseAt=performance.now();if(this.ws?.readyState===WebSocket.OPEN)this.showStatus(result.active);}
     // A paused race accepts only explicit menu actions. Auto throttle must never
     // trigger Race's legacy "press throttle to resume" escape hatch.
     return {...result,paused:ctx.race.state===RaceState.Paused};

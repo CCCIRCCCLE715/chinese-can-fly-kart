@@ -13,6 +13,7 @@
 import { RaceState, type Ctx, type IKart, type KartStats } from '../types';
 import { el, formatClock, ordinalSuffix, cssColor, clamp } from './uiUtil';
 import { ControlsMenu } from './ControlsMenu';
+import { assetUrl } from '../core/AssetUrl';
 
 export type ScreenName = 'none' | 'title' | 'select' | 'pause' | 'results';
 
@@ -318,12 +319,12 @@ export class Menus {
     wrap.style.flexDirection = 'column';
     wrap.style.alignItems = 'center';
     const logo = el('img', 'kr-logo', wrap) as HTMLImageElement;
-    logo.src = '/images/kart-title-zh-v2.png';
+    logo.src = assetUrl('/images/kart-title-zh-v2.png');
     logo.alt = '卡丁王者';
     logo.width = 1774;
     logo.height = 887;
     logo.draggable = false;
-    el('div', 'kr-sub', wrap, '落日湾赛道');
+    el('div', 'kr-sub', wrap, '彩色日式小镇');
     // Built empty; `syncTouchCopy` fills it from `ctx.input.touch` every time
     // that flips. This used to run its OWN `matchMedia('(pointer: coarse)')`
     // probe once, in the constructor — which is exactly the check that fails on

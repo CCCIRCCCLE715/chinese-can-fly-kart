@@ -1,3 +1,4 @@
+import { enforceTrackBoundary } from './TrackBoundary';
 import * as THREE from 'three';
 import {
   BASE_TOP_SPEED,
@@ -691,6 +692,8 @@ export class Kart implements IKart {
   /** chassis up, slerped toward the ground normal */
   readonly up = new THREE.Vector3(0, 1, 0);
   readonly wheels: THREE.Object3D[];
+  /** Optional imported appearance follows the existing suspension/steering rig. */
+  appearanceUpdate?: () => void;
 
   forwardSpeed = 0;
   t = 0;
@@ -702,6 +705,7 @@ export class Kart implements IKart {
   driftCharge = 0;
   driftTier = 0;
   boostTime = 0;
+  rocketTime = 0;
   airborne = false;
   stunTime = 0;
   starTime = 0;
@@ -748,6 +752,7 @@ export class Kart implements IKart {
   private steerAngle = 0;
   private boostStrength = 1;
   private topSpeed = BASE_TOP_SPEED;
+  paceScale = 1;
 
   // drift / hop / trick
   private wantDriftPrev = false;
@@ -1110,6 +1115,7 @@ export class Kart implements IKart {
     this.driftTime = 0;
     this.clearPose();
     this.boostTime = 0;
+    this.rocketTime = 0;
     this.boostStrength = 1;
     this.stunTime = 0;
     this.starTime = 0;
@@ -1217,11 +1223,11 @@ export class Kart implements IKart {
     // at every frame rate.
     for (let i = 0; i < n; i++) {
       this.updateSteerInput(h, steer);
-      this.updateDriftState(ctx, h, wantDrift);
+      if (this.rocketTime <= 0) this.updateDriftState(ctx, h, wantDrift);
       this.substep(h, throttle, brake, stunned);
-      this.collideWalls(ctx);
       this.collideKarts(ctx, h);
-      this.updateAirborne(ctx, h);
+      this.collideWalls(ctx);
+      if (this.rocketTime <= 0) this.updateAirborne(ctx, h);
     }
     const grounded = this.suspension.contacts > 0;
 
@@ -1309,9 +1315,58 @@ export class Kart implements IKart {
     }
   }
 
+  activateRocket(): boolean {
+    if (!this.isPlayer || this.finished || this.rocketTime > 0 || this.stunTime > 0) return false;
+    this.rocketTime = 3;
+    this.driftDir = 0;
+    this.driftCharge = 0;
+    this.trickPhase = 0;
+    this.trickArmed = false;
+    return true;
+  }
+
+  /** Thrust changes the actual chassis trajectory, including its heading. */
+  private stepRocket(h: number, brake: number) {
+    const left = this.rocketTime;
+    const elapsed = 3 - left;
+    const ease = (v: number) => { const t = clamp(v, 0, 1); return t*t*(3-2*t); };
+    const lift = 2.4 * Math.min(ease(elapsed / .45), ease(left / .65));
+    const ground = this.track.probe(this.position, this.t);
+    const targetY = ground.y + .08 + lift;
+    const climb = clamp((targetY - this.position.y) * 9, -5, 7);
+    this.velocity.y += (climb - this.velocity.y) * smooth(14, h);
+    this.steerAngle += (this.steerInput * MAX_STEER - this.steerAngle) * smooth(26, h);
+    this.yawRate += (this.steerInput * 1.35 - this.yawRate) * smooth(7, h);
+    this.yaw += this.yawRate * h;
+    const speed = Math.hypot(this.velocity.x, this.velocity.z);
+    this.topSpeed = BASE_TOP_SPEED * this.stats.topSpeedMul * 1.5;
+    const nextSpeed = approach(speed, brake > .1 ? this.topSpeed*.65 : this.topSpeed, (brake > .1 ? 24 : 18)*h);
+    const blend = smooth(10, h);
+    this.velocity.x += (Math.sin(this.yaw)*nextSpeed - this.velocity.x)*blend;
+    this.velocity.z += (Math.cos(this.yaw)*nextSpeed - this.velocity.z)*blend;
+    const planarLength = Math.hypot(this.velocity.x, this.velocity.z);
+    if (planarLength > 1e-6) {
+      this.velocity.x *= nextSpeed / planarLength;
+      this.velocity.z *= nextSpeed / planarLength;
+    }
+    this.position.addScaledVector(this.velocity, h);
+    this.forwardSpeed = Math.hypot(this.velocity.x, this.velocity.z);
+    this.suspension.solve(h, this.position, this.quaternion, this.up, 0, 0, true);
+    this.airborne = true;
+    this.airTime += h;
+    this.badSurfaceTime = 0;
+    this.rocketTime = Math.max(0, left-h);
+    if (this.rocketTime < 1e-6) this.rocketTime = 0;
+    this.sanitize();
+  }
+
   private substep(h: number, throttle: number, brake: number, stunned: boolean) {
     const sus = this.suspension;
     this.updateBasis(h);
+    if (this.rocketTime > 0) {
+      this.stepRocket(h, brake);
+      return;
+    }
 
     const latBefore = this.velocity.dot(this.right);
     const fwdBefore = this.velocity.dot(this.forward);
@@ -1343,7 +1398,7 @@ export class Kart implements IKart {
     const surfMax = grounded ? sus.maxSpeedMul : 1;
     const boosting = this.boostTime > 0;
     this.topSpeed =
-      BASE_TOP_SPEED * this.stats.topSpeedMul * surfMax * (boosting ? this.boostStrength : 1) *
+      BASE_TOP_SPEED * this.stats.topSpeedMul * this.paceScale * surfMax * (boosting ? this.boostStrength : 1) *
       (this.starTime > 0 ? 1.06 : 1);
 
     const vf = fwdBefore;
@@ -1949,40 +2004,21 @@ export class Kart implements IKart {
   // ---------------------------------------------------------------------------
 
   private collideWalls(ctx: Ctx) {
-    const hit = ctx.track.collideWalls(this.position, KART_RADIUS, this.t);
-    if (!hit) return;
-    const n = hit.normal;
-    if (!Number.isFinite(n.x) || n.lengthSq() < 1e-8) return;
-    this.position.add(hit.push);
-
-    const vn = this.velocity.dot(n);
-    if (vn >= 0) return;
-
-    const speed = Math.max(1, this.velocity.length());
-    const squareness = clamp(-vn / speed, 0, 1);
-
-    // Bounce out, then scrub along the barrier proportionally to how square the
-    // hit was: a glancing scrape barely costs anything, a head-on stops you.
-    this.velocity.addScaledVector(n, -vn * (1 + WALL_RESTITUTION));
-    this.velocity.multiplyScalar(1 - 0.5 * squareness * squareness);
-    // A deliberate nudge back toward the racing surface so nobody grinds along
-    // the wall with the throttle pinned.
-    this.velocity.addScaledVector(n, 1.2 + 3.2 * squareness);
-
-    // Turn the nose away from the barrier rather than leaving it buried in it.
-    const desired = Math.atan2(n.x, n.z);
-    let delta = desired - this.yaw;
-    delta = Math.atan2(Math.sin(delta), Math.cos(delta));
-    this.yaw += delta * 0.3 * squareness;
-    this.yawRate *= 0.55;
-    if (this.driftDir !== 0 && squareness > 0.35) this.releaseDrift(ctx);
-
-    const impulse = -vn * (1 + WALL_RESTITUTION);
-    if (this.collideCooldown <= 0 && impulse > 1.5) {
-      this.collideCooldown = 0.12;
-      ctx.bus.emit({ type: 'collide', kart: this, other: null, impulse });
-      this.driverRig?.jolt(clamp(impulse * 0.07, 0, 1.4));
-      if (this.isPlayer) ctx.shake(clamp(impulse * 0.02, 0, 0.5), 0.28);
+    const speed=Math.hypot(this.velocity.x,this.velocity.z);
+    const heading = enforceTrackBoundary(ctx.track, this, KART_RADIUS + .4);
+    if (heading === null) return;
+    this.yaw = heading;
+    this.yawRate = 0;
+    this.steerAngle = 0;
+    this.steerInput = 0;
+    this.driftDir = 0;
+    this.driftCharge = this.driftTime = this.driftCarry = this.driftCarryTime = 0;
+    this.driftTier = 0;
+    this.updateBasis(1);
+    if (this.collideCooldown <= 0 && speed > 2) {
+      this.collideCooldown = .18;
+      ctx.bus.emit({ type: 'collide', kart: this, other: null, impulse: Math.min(12,speed*.25) });
+      if(this.isPlayer)ctx.shake(.12,.15);
     }
   }
 
@@ -2195,6 +2231,7 @@ export class Kart implements IKart {
 
     this.applyWheelVisuals(dt);
     this.applyDriverRig(dt);
+    this.appearanceUpdate?.();
   }
 
   private applyWheelVisuals(dt: number) {
@@ -2296,6 +2333,7 @@ export class Kart implements IKart {
     this.driftCarry = 0;
     this.driftCarryTime = 0;
     this.boostTime = 0;
+    this.rocketTime = 0;
     this.boostStrength = 1;
     this.velocity.multiplyScalar(0.45);
   }
@@ -2307,6 +2345,7 @@ export class Kart implements IKart {
     this.squashLen = Math.max(0.05, seconds);
     this.velocity.multiplyScalar(0.25);
     this.boostTime = 0;
+    this.rocketTime = 0;
     this.boostStrength = 1;
     this.driftDir = 0;
     this.driftTier = 0;
@@ -2351,6 +2390,7 @@ export class Kart implements IKart {
     this.driftCarryTime = 0;
     this.clearPose();
     this.boostTime = 0;
+    this.rocketTime = 0;
     this.boostStrength = 1;
     this.stunTime = 0;
     this.squashTime = 0;

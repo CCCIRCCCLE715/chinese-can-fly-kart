@@ -22,6 +22,7 @@
  * ============================================================================
  */
 import * as THREE from 'three';
+import { loadFirstKart, installFirstKart } from '../kart/ImportedKart';
 import {
   BASE_TOP_SPEED,
   LAP_COUNT,
@@ -204,11 +205,13 @@ export class Race implements IRace {
   private pauseThrottleClear = false;
   /** index into `karts` the human drives; see `selectKart` */
   private selected = 0;
+  private firstKartAppearance?: (active: boolean) => void;
 
   // ---------------------------------------------------------------- lifecycle
 
-  init(ctx: Ctx) {
+  async init(ctx: Ctx) {
     this.ctx = ctx;
+    const firstModel = await loadFirstKart();
     const n = Math.min(RACER_COUNT, ROSTER.length);
     for (let i = 0; i < n; i++) {
       const k = new Kart(i, i === 0, ROSTER[i]);
@@ -222,6 +225,8 @@ export class Race implements IRace {
     }
     this.player = this.karts[0];
     this.selected = 0;
+    this.firstKartAppearance = installFirstKart(this.player, firstModel);
+    this.firstKartAppearance(true);
 
     // The line is solved once, here, and shared: the drivers steer along it and
     // red shells chase along it, so a shell tracks exactly where its victim is
@@ -303,6 +308,7 @@ export class Race implements IRace {
     this.karts[want].isPlayer = true;
     this.selected = want;
     this.player = this.karts[want];
+    this.firstKartAppearance?.(want === 0);
   }
 
   /**
@@ -458,7 +464,7 @@ export class Race implements IRace {
     const rolling = live || this.state === RaceState.Finished || this.state === RaceState.Results;
 
     // --- drive --------------------------------------------------------------
-    this.ai.beginFrame(this.karts, this.player, dt);
+    this.ai.beginFrame(this.karts, this.player, live ? dt : 0);
 
     for (let i = 0; i < this.karts.length; i++) {
       const k = this.karts[i];

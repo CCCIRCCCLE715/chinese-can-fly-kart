@@ -46,10 +46,12 @@ const plain=http.createServer(handler),secure=https.createServer({key:readFileSy
 const wss=new WebSocketServer({noServer:true,maxPayload:2048});
 function upgrade(req,socket,head) {
  let url;try{url=new URL(req.url,'http://localhost');}catch{socket.destroy();return;}const room=rooms.get(url.searchParams.get('id'));const role=url.searchParams.get('role');const key=url.searchParams.get('key');
- const allowedOrigin=req.socket.encrypted?`https://${ip}:${tlsPort}`:`http://127.0.0.1:${port}`;
- const valid=room&&url.pathname==='/link'&&(role==='host'?local(req)&&equal(key,room.hostToken)&&!room.host:role==='phone'&&equal(key,room.token)&&!room.phone&&req.socket.encrypted)&&(!req.headers.origin||req.headers.origin===allowedOrigin);
+ const allowedOrigins=role==='host'
+  ? [`${req.socket.encrypted?'https':'http'}://127.0.0.1:${req.socket.encrypted?tlsPort:port}`,`${req.socket.encrypted?'https':'http'}://localhost:${req.socket.encrypted?tlsPort:port}`]
+  : [`https://${ip}:${tlsPort}`];
+ const valid=room&&url.pathname==='/link'&&(role==='host'?local(req)&&equal(key,room.hostToken)&&!room.host:role==='phone'&&equal(key,room.token)&&!room.phone&&req.socket.encrypted)&&(!req.headers.origin||allowedOrigins.includes(req.headers.origin));
  if(!valid){socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');socket.destroy();return;}
- wss.handleUpgrade(req,socket,head,ws=>{room[role==='host'?'host':'phone']=ws;ws.role=role;ws.room=room;room.seq=-1;room.lost=false;broadcast(room,{type:'status',connected:!!room.phone});wss.emit('connection',ws);});
+ wss.handleUpgrade(req,socket,head,ws=>{room[role==='host'?'host':'phone']=ws;ws.role=role;ws.room=room;room.seq=-1;room.lost=false;broadcast(room,{type:'status',connected:!!room.phone,hostConnected:!!room.host});wss.emit('connection',ws);});
 }
 plain.on('upgrade',upgrade);secure.on('upgrade',upgrade);
 function send(ws,p){if(ws?.readyState===WebSocket.OPEN&&ws.bufferedAmount<65536)ws.send(JSON.stringify(p));}

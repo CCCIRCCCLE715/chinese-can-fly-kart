@@ -99,7 +99,7 @@ const DOF_INTERNAL_SCALE = 0.5;
  * bilinearly upsampled from 960x540, which adds roughly a pixel of softening on
  * top of the authored ~1.25 px; and the circle of confusion is computed at half
  * resolution, which only matters at an in-focus/out-of-focus boundary. With
- * focusDistance 9 and focusRange 60 the only such boundary in this game is the
+ * focusDistance 9 and focusRange 180 the only such boundary in this game is the
  * headland against the sky.
  *
  * The reentry guard is load-bearing. `Resolution` fires a `change` event from
@@ -721,8 +721,8 @@ export class GradeEffect extends Effect {
         // (0.9892 against 0.9825) — so the road desaturates a little rather
         // than gaining more colour, and §9.6's "no pure-black shadows" gains a
         // hair of headroom at the same time.
-        ['coolTint', new THREE.Uniform(new THREE.Vector3(0.900, 1.010, 1.045))],
-        ['warmTint', new THREE.Uniform(new THREE.Vector3(1.115, 1.005, 0.878))],
+        ['coolTint', new THREE.Uniform(new THREE.Vector3(0.980, 1.005, 1.025))],
+        ['warmTint', new THREE.Uniform(new THREE.Vector3(1.025, 1.005, 0.980))],
         // Additive teal lift on the bottom of the curve — art bible §2 asks for
         // a #a8c8ff sky fill in the shadows, and nothing multiplicative can
         // produce it. Sized to sit just above the noise floor of an 8-bit write.
@@ -1125,7 +1125,36 @@ export class PostFX {
       cfg.neuralDenoise = false;
       // The auto-detect walks the entire scene graph every single frame.
       ao.autoDetectTransparency = false;
-      cfg.transparencyAware = false;
+      // N8AO's native mask attenuates thin sakura card AO, rather than erasing it.
+      // The foliage still writes depth and casts sun shadows; streets, trunks
+      // and vehicles keep their contact AO.
+      cfg.transparencyAware = true;
+      const renderTransparency = ao.renderTransparency.bind(ao);
+      let sakuraMaskUniforms: { value: number }[] | null = null;
+      ao.renderTransparency = (renderer: THREE.WebGLRenderer) => {
+        if (!sakuraMaskUniforms) {
+          const uniforms = new Set<{ value: number }>();
+          ctx.scene.traverse(object => {
+            const mesh = object as THREE.Mesh;
+            if (!mesh.material) return;
+            for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+              if (material.userData.sakuraAoMask) uniforms.add(material.userData.sakuraAoMask);
+            }
+          });
+          sakuraMaskUniforms = [...uniforms];
+        }
+        for (const uniform of sakuraMaskUniforms) uniform.value = 1;
+        const autoUpdate = renderer.shadowMap.autoUpdate;
+        const needsUpdate = renderer.shadowMap.needsUpdate;
+        renderer.shadowMap.autoUpdate = false;
+        renderer.shadowMap.needsUpdate = false;
+        try { renderTransparency(renderer); }
+        finally {
+          for (const uniform of sakuraMaskUniforms) uniform.value = 0;
+          renderer.shadowMap.autoUpdate = autoUpdate;
+          renderer.shadowMap.needsUpdate = needsUpdate;
+        }
+      };
       this.ao = ao;
       this.add(composer, ao);
     }
@@ -1140,13 +1169,13 @@ export class PostFX {
       // soften. bokehScale stays small for the same reason.
       const dof = new ScaledDepthOfFieldEffect(ctx.camera, {
         focusDistance: 9,
-        focusRange: 60,
-        bokehScale: 1.25,
+        focusRange: 180,
+        bokehScale: 0.65,
         // Applied ON TOP of the halved base in ScaledDepthOfFieldEffect, so the
         // blur tier lands at a quarter of the drawing buffer. The near-field
         // half of that tier is very nearly a no-op in this game anyway: with
-        // focusDistance 9 and focusRange 60, a subject 1 m from the lens has a
-        // near CoC of smoothstep(0, 60, 8) = 0.05.
+        // focusDistance 9 and focusRange 180, a subject 1 m from the lens has a
+        // near CoC of smoothstep(0, 180, 8) = 0.006.
         resolutionScale: 0.5,
       });
       dof.target = _dofTarget.set(0, 0, 0);

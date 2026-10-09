@@ -1,3 +1,5 @@
+import { GasClouds } from './GasClouds';
+import { loadRocketModel, rocketMount } from './RocketModel';
 /**
  * ============================================================================
  *  ITEMS — boxes, the distribution table, and every item's effect
@@ -499,10 +501,13 @@ function markMaterial(ctx: Ctx): THREE.MeshStandardMaterial {
 export class Items implements IItems {
   readonly group = new THREE.Group();
 
+  private rocketMeshes: THREE.InstancedMesh[] = [];
+  private rocketViews: ((now: number) => void)[] = [];
   private slots = new Map<number, Slot>();
   private heldViews = new Map<number, { kind: ItemKind; count: number }>();
   private boxes: Box[] = [];
   private proj = new Projectiles();
+  private gas = new GasClouds();
   private karts: readonly IKart[] = [];
   private ctx!: Ctx;
 
@@ -520,14 +525,20 @@ export class Items implements IItems {
 
   // ---------------------------------------------------------------- lifecycle
 
-  init(ctx: Ctx) {
+  async init(ctx: Ctx) {
     this.ctx = ctx;
     this.karts = ctx.race?.karts ?? [];
     this.group.name = 'items';
 
     this.proj.init(ctx);
+    this.group.add(this.gas.mesh);
     this.buildBoxes(ctx);
     this.buildOrbit();
+    const rocket = await loadRocketModel();
+
+    this.rocketViews = this.karts.map(k => rocketMount(rocket, k));
+    this.boxMesh.visible = this.markMesh.visible = true;
+    this.coreMesh.visible = true;
 
     ctx.scene.add(this.group);
     for (const k of this.karts) this.slots.set(k.id, this.freshSlot());
@@ -565,6 +576,7 @@ export class Items implements IItems {
       b.scale = 1;
     }
     this.proj.clear();
+    this.gas.clear();
   }
 
   // -------------------------------------------------------------------- build
@@ -678,7 +690,10 @@ export class Items implements IItems {
       depthWrite: false,
       toneMapped: false,
     });
-    const coreGeo = new THREE.OctahedronGeometry(BOX_SIZE * 0.92, 1);
+    // Open luminous ring keeps the pickup silhouette readable from every side.
+    this.coreMat.map = null;
+    this.coreMat.opacity = 0.8;
+    const coreGeo = new THREE.TorusGeometry(.96, .035, 6, 40);
     this.coreMesh = new THREE.InstancedMesh(coreGeo, this.coreMat, this.boxes.length);
     this.coreMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.coreMesh.frustumCulled = false;
@@ -729,19 +744,8 @@ export class Items implements IItems {
    * Weighted roll. `place` is 1-based; the position is normalised across the
    * field so the table reads the same in a 4-kart race as in an 8-kart one.
    */
-  roll(place: number, racers: number): ItemKind {
-    const p = racers > 1 ? clamp((place - 1) / (racers - 1), 0, 1) : 0;
-    let total = 0;
-    let pick = ItemKind.Mushroom;
-    for (const kind of KINDS) {
-      const w = WEIGHTS[kind];
-      // two-segment lerp through the midfield column
-      const v = p < 0.5 ? w[0] + (w[1] - w[0]) * (p * 2) : w[1] + (w[2] - w[1]) * ((p - 0.5) * 2);
-      if (v <= 0) continue;
-      total += v;
-      if (Math.random() * total < v) pick = kind;
-    }
-    return total > 0 ? pick : ItemKind.Mushroom;
+  roll(_place: number, _racers: number, _permanentBanana = false): ItemKind {
+    return [ItemKind.Banana, ItemKind.Gas, ItemKind.Rocket][Math.floor(Math.random() * 3)];
   }
 
   /**
@@ -788,21 +792,33 @@ export class Items implements IItems {
   }
 
   give(kart: IKart, kind: ItemKind, count = 1) {
+    if (!kart.isPlayer) return;
     const s = this.slot(kart);
-    s.kind = kind;
-    s.count = kind === ItemKind.TripleMushroom ? Math.max(count, 3) : count;
+    s.kind = [ItemKind.Banana, ItemKind.Gas, ItemKind.Rocket].includes(kind) ? kind : ItemKind.None;
+    s.count = s.kind === ItemKind.None ? 0 : s.kind === ItemKind.Rocket ? 1 : 3;
     s.arm = ARM_TIME;
   }
 
   pickup(kart: IKart) {
+    if (!kart.isPlayer || kart.rocketTime > 0) return;
     const s = this.slot(kart);
     if (s.kind !== ItemKind.None || s.carried >= 0) return;
     const racers = this.karts.length || 8;
-    this.give(kart, this.roll(kart.place || racers, racers));
+    this.give(kart, this.roll(kart.place || racers, racers, kart.isPlayer));
     this.ctx.bus.emit({ type: 'item-pickup', kart });
   }
 
+  /** Compatibility entry points still respect the shared inventory. */
+  throwBanana(kart: IKart): boolean {
+    return this.held(kart).kind === ItemKind.Banana && this.use(kart, false);
+  }
+
+  releaseGas(kart: IKart): boolean {
+    return this.held(kart).kind === ItemKind.Gas && this.use(kart, false);
+  }
+
   use(kart: IKart, backwards: boolean): boolean {
+    if (!kart.isPlayer || kart.finished || this.ctx.race.state !== RaceState.Racing) return false;
     const s = this.slot(kart);
     const ctx = this.ctx;
 
@@ -825,6 +841,15 @@ export class Items implements IItems {
     let consumed = true;
 
     switch (kind) {
+      case ItemKind.Gas:
+        this.gas.release(ctx, kart);
+        break;
+      case ItemKind.Banana:
+        if (this.proj.spawn(ItemKind.Banana, kart, false, false, -1, true) < 0) return false;
+        break;
+      case ItemKind.Rocket:
+        if (!kart.activateRocket()) return false;
+        break;
       case ItemKind.Mushroom:
       case ItemKind.TripleMushroom:
         kart.applyBoost(MUSHROOM_BOOST, MUSHROOM_STRENGTH);
@@ -841,7 +866,6 @@ export class Items implements IItems {
 
       case ItemKind.GreenShell:
       case ItemKind.RedShell:
-      case ItemKind.Banana:
       case ItemKind.Bomb: {
         const carry = backwards && kind !== ItemKind.Bomb;
         const target = kind === ItemKind.RedShell && !carry ? this.targetAhead(kart) : -1;
@@ -918,6 +942,7 @@ export class Items implements IItems {
     const karts = ctx.race?.karts ?? this.karts;
     this.karts = karts;
     const now = ctx.time;
+    for (const update of this.rocketViews) update(now);
 
     // The sky may only publish its environment map after our materials were
     // built; pick it up the frame it appears rather than shipping matte plastic.
@@ -976,6 +1001,7 @@ export class Items implements IItems {
     }
 
     this.proj.update(ctx, step, karts);
+    this.gas.update(ctx, ctx.race.state === RaceState.Racing ? step : 0, karts);
     this.updateOrbit(karts, now);
   }
 
@@ -1018,7 +1044,7 @@ export class Items implements IItems {
         }
         for (let j = 0; j < karts.length; j++) {
           const k = karts[j];
-          if (k.finished) continue;
+          if (k.finished || !k.isPlayer || k.rocketTime > 0) continue;
           _v.subVectors(k.position, b.pos);
           if (Math.abs(_v.y) > 2.2) continue;
           _v.y = 0;
@@ -1051,6 +1077,7 @@ export class Items implements IItems {
       _s.setScalar(pop);
       _m.compose(_v2, _q, _s);
       this.boxMesh.setMatrixAt(live, _m);
+      for (const mesh of this.rocketMeshes) mesh.setMatrixAt(live, _m);
 
       // The mark, inside the glass, on its own clock.
       //
@@ -1094,6 +1121,7 @@ export class Items implements IItems {
       live++;
     }
 
+    for (const mesh of this.rocketMeshes) { mesh.count = live; mesh.instanceMatrix.needsUpdate = true; }
     this.boxMesh.count = live;
     this.markMesh.count = live;
     this.coreMesh.count = live;
@@ -1143,6 +1171,7 @@ export class Items implements IItems {
 
   dispose() {
     this.proj.dispose();
+    this.gas.dispose();
     this.boxMesh.geometry.dispose();
     this.markMesh.geometry.dispose();
     this.coreMesh.geometry.dispose();

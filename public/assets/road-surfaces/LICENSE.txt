@@ -1,0 +1,4 @@
+Poly Haven publishes the textures listed in sources.json under CC0 1.0 Universal.
+https://polyhaven.com/license
+https://creativecommons.org/publicdomain/zero/1.0/
+Original unmodified 1K JPEG maps are preserved locally; hashes and download URLs are recorded in sources.json.

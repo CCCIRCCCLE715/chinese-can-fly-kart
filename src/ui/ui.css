@@ -2171,3 +2171,6 @@ html[data-touch][data-touch-hand="left"] .kr .kr-pos {
 
 /* Keep global game controls out of the control settings sheet. */
 html[data-kc-open] .kart-audio-toggle, html[data-kc-open] .rp-toggle { display: none !important; }
+
+/* Permanent skill sits above the ordinary inventory and never consumes it. */
+.kr-rocket-key { position: absolute; top: -21px; left: 50%; transform: translateX(-50%); white-space: nowrap; color: #fff2d9; font-size: 12px; text-shadow: 0 1px 3px #24170c; pointer-events: none; }

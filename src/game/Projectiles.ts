@@ -622,6 +622,7 @@ interface Proj {
   scale: number;
   targetId: number;
   homing: boolean;
+  grounded: boolean;
   mesh: THREE.Mesh;
 }
 
@@ -708,7 +709,7 @@ export class Projectiles {
         kind: ItemKind.None, state: PState.Free, owner: -1, ownerLock: 0,
         pos: new THREE.Vector3(), vel: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0),
         life: 0, bounces: 0, hintT: 0, spin: 0, scale: 1,
-        targetId: -1, homing: false, mesh,
+        targetId: -1, homing: false, grounded: false, mesh,
       });
     }
 
@@ -785,8 +786,14 @@ export class Projectiles {
   //  Spawning
   // ---------------------------------------------------------------------------
 
-  private acquire(): Proj | null {
-    for (const p of this.pool) if (p.state === PState.Free) return p;
+  private acquire(permanentBanana = false): Proj | null {
+    // Reserve one slot for the permanent skill, even when ordinary shots fill
+    // the pool. Other items must not consume or recycle that reserved slot.
+    const available = permanentBanana ? this.pool.length : this.pool.length - 1;
+    for (let i = 0; i < available; i++) {
+      const p = this.pool[i];
+      if (p.state === PState.Free) return p;
+    }
     // Pool exhausted: recycle the oldest LIVE banana rather than dropping the
     // player's input on the floor.
     //
@@ -797,7 +804,8 @@ export class Projectiles {
     // at all. And a `Carried` banana is a shield somebody is actively towing;
     // stealing that silently emptied their item slot mid-lap.
     let oldest: Proj | null = null;
-    for (const p of this.pool) {
+    for (let i = 0; i < available; i++) {
+      const p = this.pool[i];
       if (p.kind !== ItemKind.Banana || p.state !== PState.Live) continue;
       if (!oldest || p.life < oldest.life) oldest = p;
     }
@@ -822,13 +830,15 @@ export class Projectiles {
     backwards: boolean,
     carried: boolean,
     targetId = -1,
+    permanentBanana = false,
   ): number {
-    const p = this.acquire();
+    const p = this.acquire(permanentBanana);
     if (!p) return -1;
     p.kind = kind;
     p.owner = owner.id;
     p.state = carried ? PState.Carried : PState.Live;
     p.bounces = 0;
+    p.grounded = false;
     p.hintT = owner.t;
     p.spin = 0;
     p.scale = 0.001;              // pops up to full size, never appears from nothing
@@ -847,10 +857,8 @@ export class Projectiles {
     //    straight line while the kart follows the corner, so the two are still
     //    ~8 m apart — inside BLAST_RADIUS — when it lands. Measured on the
     //    harbour sweep: every forward-thrown bomb took out its own thrower.
-    //  - A banana thrown ahead is a *stationary* hazard that lands on the road
-    //    the thrower is about to drive down, roughly a second in front of them.
-    //    The lock covers the flight and the pass over the top of it; after that
-    //    the banana is behind the thrower and, next lap, fair game again.
+    //  - Bananas keep sliding after landing. Their owner is excluded from
+    //    contact tests, so a slower shot cannot trip the thrower later.
     p.ownerLock = carried ? 0
       : backwards ? 0.55
         : kind === ItemKind.Bomb ? 1.15
@@ -977,12 +985,17 @@ export class Projectiles {
         if (!this.testKarts(ctx, p, karts)) continue;
       } else {
         p.life -= dt;
-        if (p.life <= 0) {
+        if (p.life <= 0 && p.kind !== ItemKind.Banana) {
           if (p.kind === ItemKind.Bomb) this.explode(ctx, p, karts);
           this.kill(p);
           continue;
         }
-        if (!this.stepLive(ctx, p, dt, karts)) continue;
+        // Short travel steps keep a fast sliding banana from skipping a kart
+        // or crossing a thin barrier between rendered frames.
+        const steps = p.kind === ItemKind.Banana ? Math.max(1, Math.ceil(Math.hypot(p.vel.x, p.vel.z) * dt / 0.5)) : 1;
+        let alive = true;
+        for (let step = 0; step < steps && alive; step++) alive = this.stepLive(ctx, p, dt / steps, karts);
+        if (!alive) continue;
       }
 
       // --- present ---------------------------------------------------------
@@ -1051,8 +1064,9 @@ export class Projectiles {
     p.up.copy(probe.normal);
 
     if (p.kind === ItemKind.Banana) {
-      // settles onto the road and stays there, banked with the surface
-      if (p.pos.y > floor) {
+      // Flight bends gently with the road; after landing the shot keeps its
+      // horizontal direction and speed, following only the road elevation.
+      if (!p.grounded && p.pos.y > floor) {
         p.vel.y -= BOMB_GRAVITY * dt;
         // A lob follows the road, not the tangent it left on. Thrown forward at
         // the thrower's own speed plus the throw, a banana covers 30-40 m in
@@ -1062,11 +1076,15 @@ export class Projectiles {
         // belongs.
         this.curveWithRoad(p, dt);
       }
-      if (p.pos.y <= floor) {
+      if (p.grounded || p.pos.y <= floor) {
+        p.grounded = true;
         p.pos.y = floor;
-        p.vel.set(0, 0, 0);
+        p.vel.y = 0;
       }
-      if (probe.surface === Surface.Water) return this.sink(p);
+      if (probe.surface === Surface.Water || probe.edgeRatio >= 1 || track.collideWalls(p.pos, 0.55, p.hintT)) {
+        this.kill(p);
+        return false;
+      }
     } else if (p.kind === ItemKind.Bomb) {
       if (p.pos.y <= floor) {
         this.explode(ctx, p, karts);
@@ -1222,7 +1240,7 @@ export class Projectiles {
     const reach = (p.kind === ItemKind.Banana ? 0.55 : SHELL_R) + 1.0;
     for (let i = 0; i < karts.length; i++) {
       const k = karts[i];
-      if (k.id === p.owner && (p.state === PState.Carried || p.ownerLock > 0)) continue;
+      if (k.id === p.owner && (p.kind === ItemKind.Banana || p.state === PState.Carried || p.ownerLock > 0)) continue;
       _v.subVectors(k.position, p.pos);
       if (Math.abs(_v.y) > 1.8) continue;
       _v.y = 0;
@@ -1231,7 +1249,7 @@ export class Projectiles {
       if (k.starTime > 0 || k.stunTime > 0.9) {
         // A starred kart smashes straight through; a kart already spinning is
         // not punished twice for the same mistake.
-        if (k.starTime > 0) { this.kill(p); return false; }
+        if (k.starTime > 0 || p.kind === ItemKind.Banana) { this.kill(p); return false; }
         continue;
       }
       if (p.kind === ItemKind.Bomb) {
@@ -1317,7 +1335,7 @@ export class Projectiles {
     }
   }
 
-  /** Spin and lean. Shells roll along their travel; bananas just lie there. */
+  /** Spin and lean. Shells roll; sliding bananas keep their peel facing up. */
   private orient(p: Proj, dt: number) {
     if (p.kind === ItemKind.Banana) {
       _q.setFromUnitVectors(UP, p.up);

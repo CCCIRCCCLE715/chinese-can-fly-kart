@@ -4,35 +4,36 @@ const $=id=>document.getElementById(id);
 const pair=location.hash.slice(1).split('.');
 const counts={item:0,pause:0,confirm:0};
 const buttons=createButtonState(),tapContacts=new Map();
-let ws,seq=0,enabled=false,raw=null,zero=null,sensorAt=0,steer=0,filtered=0,wake=null,retry,hostGone=false;
+let ws,seq=0,enabled=false,raw=null,zero=null,sensorAt=0,steer=0,filtered=0,wake=null,retry,hostGone=false,hostConnected=false;
 let motionReady=false,requesting=false,settingsOpen=false,foreground=!document.hidden;
 let candidate=null,stableAt=0,lastUpdate=performance.now(),hintTimer;
 const landscape=()=>matchMedia('(orientation: landscape)').matches;
 const orientation=()=>screenAngle({legacy:window.orientation,angle:screen.orientation?.angle,type:screen.orientation?.type,landscape:landscape()});
 let tiltAngle=orientation(),wasLandscape=landscape();
 const pings=new Map();let pingId=0;
-function saveSettings(){try{localStorage.setItem('kart-tilt-settings',JSON.stringify({range:Number($('range').value),invert:$('invert').checked,auto:$('auto').checked}));}catch{}}
-try{const s=JSON.parse(localStorage.getItem('kart-tilt-settings'));if(s){if(Number.isFinite(s.range)&&s.range>=10&&s.range<=40)$('range').value=s.range;if(typeof s.invert==='boolean')$('invert').checked=s.invert;if(typeof s.auto==='boolean')$('auto').checked=s.auto;}}catch{}
+function saveSettings(){try{localStorage.setItem('kart-tilt-settings',JSON.stringify({range:Number($('range').value),invert:$('invert').checked}));}catch{}}
+try{const s=JSON.parse(localStorage.getItem('kart-tilt-settings'));if(s){if(Number.isFinite(s.range)&&s.range>=10&&s.range<=40)$('range').value=s.range;if(typeof s.invert==='boolean')$('invert').checked=s.invert;}}catch{}
 $('range-value').textContent=$('range').value+'°';
 function hint(text='',persistent=false){clearTimeout(hintTimer);$('hint').textContent=text;$('hint').hidden=!text;if(text&&!persistent)hintTimer=setTimeout(()=>hint(),1800);}
-function render(){document.body.classList.toggle('driving',enabled);document.body.classList.toggle('motion-wait',!motionReady);$('motion').hidden=motionReady;$('motion').disabled=requesting;}
+function render(){if(ws?.readyState===WebSocket.OPEN&&!hostGone)connection(hostConnected?(enabled?'已连接 · 体感驾驶中':'已连接 · 等待体感'):'等待电脑页面连接',hostConnected);document.body.classList.toggle('driving',enabled);document.body.classList.toggle('motion-wait',!motionReady);$('motion').hidden=motionReady;$('motion').disabled=requesting;}
 function releaseControls(){buttons.clear();tapContacts.clear();steer=0;filtered=0;document.querySelectorAll('.held').forEach(e=>e.classList.remove('held'));}
 function send(){if(ws?.readyState!==WebSocket.OPEN||ws.bufferedAmount>4096)return;ws.send(JSON.stringify({type:'input',seq:seq++,steer,enabled,accel:buttons.held('accel'),brake:buttons.held('brake'),drift:buttons.held('drift'),auto:$('auto').checked,...counts}));}
 function stop(){enabled=false;releaseControls();render();send();}
-function ready(){return foreground&&!document.hidden&&!settingsOpen&&landscape()&&motionReady&&raw!==null&&zero!==null&&performance.now()-sensorAt<=600;}
+function ready(){return hostConnected&&foreground&&!document.hidden&&!settingsOpen&&landscape()&&motionReady&&raw!==null&&zero!==null&&performance.now()-sensorAt<=600;}
 function activate(){if(enabled||!ready()||ws?.readyState!==WebSocket.OPEN)return;enabled=true;render();send();if(!wake||wake.released)navigator.wakeLock?.request('screen').then(lock=>wake=lock).catch(()=>{});}
 function connection(text,connected=false){$('connection').textContent=text;document.body.classList.toggle('connected',connected);}
 function connect(){
  if(pair.length!==2||!/^\w{12}$/.test(pair[0])||!/^\w{48}$/.test(pair[1])){connection('请扫码连接');return;}
  ws=new WebSocket((location.protocol==='https:'?'wss':'ws')+'://'+location.host+'/link?role=phone&id='+pair[0]+'&key='+pair[1]);
- ws.onopen=()=>{seq=0;connection('已连接',true);stop();activate();};
+ ws.onopen=()=>{seq=0;hostConnected=false;connection('等待电脑页面连接');stop();};
  ws.onmessage=e=>{
   let p;try{p=JSON.parse(e.data);}catch{return;}if(!p||typeof p!=='object')return;
   if(p.type==='pong'&&pings.has(p.id)){const ms=performance.now()-pings.get(p.id);pings.delete(p.id);$('latency').textContent='连接耗时：'+Math.round(ms)+' 毫秒';}
   if(p.type==='safety'){stop();activate();}
+  if(p.type==='status'&&!p.hostGone){hostConnected=p.hostConnected===true;render();activate();}
   if(p.type==='status'&&p.hostGone){hostGone=true;stop();connection('请重新扫码');clearTimeout(retry);}
  };
- ws.onclose=()=>{stop();if(hostGone)return;connection('连接中');retry=setTimeout(connect,1500);};
+ ws.onclose=()=>{hostConnected=false;stop();if(hostGone)return;connection('连接中');retry=setTimeout(connect,1500);};
  ws.onerror=()=>connection('连接中');
 }
 function syncOrientation(){
@@ -101,7 +102,7 @@ $('settings-dialog').addEventListener('close',()=>{settingsOpen=false;activate()
 function update(){
  const now=performance.now(),dt=Math.min(.1,(now-lastUpdate)/1000);lastUpdate=now;let deg=0;
  if(!ready()){if(enabled)stop();steer=0;filtered=0;}
- else{deg=angleDifference(raw,zero);filtered+=(steerFromTilt(deg,Number($('range').value),$('invert').checked)-filtered)*(1-Math.exp(-dt/.025));steer=filtered;activate();}
+ else{deg=angleDifference(raw,zero);filtered+=(.35*steerFromTilt(deg,Number($('range').value),$('invert').checked)-filtered)*(1-Math.exp(-dt/.025));steer=filtered;activate();}
  $('angle').textContent=Math.round(deg)+'°';$('needle').style.left=(50+steer*46)+'%';send();
 }
 setInterval(update,1000/60);

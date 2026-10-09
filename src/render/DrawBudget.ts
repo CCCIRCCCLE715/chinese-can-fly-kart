@@ -199,6 +199,7 @@ export class DrawBudget implements System {
     this.frustum.setFromProjectionMatrix(this.viewProj);
 
     for (const lod of this.lods) {
+      if (!lod.root.visible) continue;
       lod.root.getWorldPosition(_pos);
       const d = _pos.distanceTo(cam.position);
 

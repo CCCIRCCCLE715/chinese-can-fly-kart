@@ -1010,7 +1010,7 @@ function wheelMaps() {
       c.scale(-1, 1);
       c.textAlign = 'center';
       c.textBaseline = 'alphabetic';
-      const big = fitText(c, '落日湾', 52, slot * 0.86);
+      const big = fitText(c, '樱花町', 52, slot * 0.86);
       c.font = `900 ${big}px "Arial Black", Impact, system-ui, sans-serif`;
       // raised letters: a dark drop under a bright face reads as a moulded
       // edge once the Sobel gets hold of it
@@ -1019,9 +1019,9 @@ function wheelMaps() {
       // by the second mip; on #1a1b1f at #6d707b it is 83, and the legend
       // survives to the distance the pack shot is taken from.
       c.fillStyle = c === hgt ? '#3d3d3d' : '#101116';
-      c.fillText('落日湾', 0, 3);
+      c.fillText('樱花町', 0, 3);
       c.fillStyle = c === hgt ? '#f6f6f6' : '#6d707b';
-      c.fillText('落日湾', 0, 0);
+      c.fillText('樱花町', 0, 0);
       const small = fitText(c, '径向轮胎 · 360 型', 26, slot * 0.80);
       c.font = `700 ${small}px "Arial Black", Impact, system-ui, sans-serif`;
       c.fillStyle = c === hgt ? '#c8c8c8' : '#4e515b';

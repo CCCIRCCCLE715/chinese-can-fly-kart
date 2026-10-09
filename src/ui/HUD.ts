@@ -449,6 +449,11 @@ export class HUD implements System {
     this.itemCanvas = el('canvas', undefined, this.itemIcon);
     this.itemG = this.itemCanvas.getContext('2d')!;
     this.itemCount = el('div', 'kr-item-count', this.itemWrap, '×2');
+    this.itemWrap.style.pointerEvents = 'auto';
+    this.itemWrap.onclick = () => { if (this.ctx?.race.player) this.ctx.items.use(this.ctx.race.player, false); };
+    this.itemWrap.setAttribute('aria-label', '道具：拾取后点击、键盘 E 或手柄 X 使用');
+    this.itemWrap.title = '道具 · 点击 / E / 手柄 X';
+    el('div', 'kr-rocket-key', this.itemWrap, '道具 · E / X');
   }
 
   private buildSpeedo() {

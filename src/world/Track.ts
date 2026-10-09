@@ -12,6 +12,7 @@
  *  stops the shoulder flying off into the sky on the banked section.
  * ============================================================================
  */
+import {loadVillageRoadTextures,disposeVillageRoadTextures} from './VillageRoadMaterial';
 import * as THREE from 'three';
 import type { Ctx, ITrack, SurfaceProbe, TrackSample } from '../types';
 import { Surface } from '../types';
@@ -107,7 +108,8 @@ export class Track implements ITrack {
     this.computeBounds();
   }
 
-  init(ctx: Ctx) {
+  async init(ctx: Ctx) {
+    await loadVillageRoadTextures(ctx.renderer);
     buildTrackGeometry(this, ctx);
     ctx.scene.add(this.group);
   }
@@ -133,6 +135,7 @@ export class Track implements ITrack {
   }
 
   dispose() {
+    disposeVillageRoadTextures();
     this.group.traverse((o: any) => {
       o.geometry?.dispose?.();
       const m = o.material;

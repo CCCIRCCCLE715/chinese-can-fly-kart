@@ -32,3 +32,22 @@ test('主动停止和断线暂停，并清除长按与旧计数',()=>{
  r.receive(packet(2,{enabled:true,drift:true}),30);r.read(30);r.disconnect();const gone=r.read(40);assert.equal(gone.lost,true);assert.equal(gone.packet,null);
  r.receive(packet(0,{enabled:false,item:5}),50);assert.equal(r.read(50).events.item,false);
 });
+
+test('手机香蕉与火箭事件分别传递且只消费一次',()=>{
+ const r=new RemoteState();r.receive(packet(0,{banana:0}),10);r.read(10);
+ r.receive(packet(1,{banana:1,item:0}),20);
+ let v=r.read(20);assert.equal(v.events.banana,true);assert.equal(v.events.item,false);
+ r.receive(packet(2,{banana:1,item:1}),30);
+ v=r.read(30);assert.equal(v.events.item,true);assert.equal(v.events.banana,false);
+ assert.equal(r.read(31).events.item,false);
+});
+
+test('gas has an independent counter, accepts older phones, and rejects invalid values',()=>{
+ assert.equal(validateInput(packet(0)).gas,0);
+ for(const gas of [-1,1.5,1e10,'1'])assert.equal(validateInput(packet(0,{gas})),null);
+ const r=new RemoteState();r.receive(packet(0,{gas:0}),10);r.read(10);
+ r.receive(packet(1,{gas:1}),20);r.receive(packet(2,{gas:1}),25);
+ const v=r.read(25);assert.equal(v.events.gas,true);assert.equal(v.events.item,false);assert.equal(v.events.banana,false);
+ assert.equal(r.read(26).events.gas,false);
+ r.disconnect();r.receive(packet(0,{gas:7}),30);assert.equal(r.read(30).events.gas,false);
+});

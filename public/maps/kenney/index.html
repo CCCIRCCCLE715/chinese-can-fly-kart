@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kenney 模块赛道 · 全局预览</title>
+  <link rel="icon" href="data:,">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #dae7ef; color: #17322c; font-family: system-ui, sans-serif; }
+    canvas { display: block; touch-action: none; }
+    header { position: absolute; top: 24px; left: 24px; max-width: calc(100% - 48px); background: #ffffffed; padding: 18px 22px; border-radius: 16px; }
+    h1 { font-size: 22px; margin: 0 0 6px; }
+    p { font-size: 13px; margin: 0; color: #52675e; }
+    nav { position: absolute; bottom: 24px; left: 24px; display: flex; flex-wrap: wrap; gap: 8px; }
+    button, a { border: 1px solid #cedbd4; background: white; color: #17322c; border-radius: 10px; padding: 12px 16px; font: 14px system-ui; cursor: pointer; text-decoration: none; }
+    button[aria-pressed="true"] { background: #173d31; color: white; border-color: #173d31; }
+    #status { position: absolute; right: 24px; bottom: 24px; background: #ffffffed; border-radius: 10px; padding: 12px; font-size: 12px; }
+    @media (max-width: 600px) { header { top: 12px; left: 12px; padding: 14px; } h1 { font-size: 18px; } nav { bottom: 60px; left: 12px; } #status { bottom: 12px; left: 12px; right: auto; } }
+  </style>
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/"}}</script>
+</head>
+<body>
+  <header><h1>Kenney 模块赛道</h1><p>原始布局 · 松树林、帐篷、护栏与起终点</p></header>
+  <nav aria-label="预览视角">
+    <button id="overview" aria-pressed="true">斜俯视全景</button>
+    <button id="top" aria-pressed="false">正俯视地图</button>
+    <a href="https://mrdoob.github.io/Starter-Kit-Racing/" target="_blank" rel="noopener">试玩原地图</a>
+  </nav>
+  <div id="status" role="status">正在加载地图…</div>
+  <script type="module" src="./overview.js"></script>
+</body>
+</html>

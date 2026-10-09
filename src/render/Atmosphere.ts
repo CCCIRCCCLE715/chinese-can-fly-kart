@@ -35,7 +35,7 @@ import { createNoise4D } from 'simplex-noise';
  * XZ). The ELEVATION of this is the non-negotiable part and is preserved
  * exactly below.
  */
-const BIBLE_SUN_DIRECTION = new THREE.Vector3(-0.62, 0.245, -0.745).normalize();
+const BIBLE_SUN_DIRECTION = new THREE.Vector3(-0.43, 0.77, -0.47).normalize();
 
 /**
  * Azimuth correction applied to the bible's vector, radians, positive = the
@@ -83,11 +83,11 @@ export const SUN_DIRECTION = (() => {
   return new THREE.Vector3(x * c - z * s, v.y, x * s + z * c).normalize();
 })();
 /** Key light colour, art bible §2. */
-export const SUN_LIGHT_COLOR = 0xffd9a8;
+export const SUN_LIGHT_COLOR = 0xfff3df;
 /** Warm ground bounce, art bible §2. */
-export const GROUND_BOUNCE_COLOR = 0xc98f5a;
+export const GROUND_BOUNCE_COLOR = 0xc6cfc2;
 /** Cool sky fill, art bible §2. */
-export const SKY_FILL_COLOR = 0xa8c8ff;
+export const SKY_FILL_COLOR = 0xd0e4f1;
 /**
  * Direction TOWARD the cool fill: 35° up, on the ANTI-solar side.
  *
@@ -134,8 +134,8 @@ export const SKY_FILL_DIRECTION = new THREE.Vector3(
   -SUN_DIRECTION.x * 3.4, 1.0, -SUN_DIRECTION.z * 3.4,
 ).normalize();
 /** Target displayed sky colours after tone mapping. */
-export const SKY_ZENITH_TARGET = 0x3f74c4;
-export const SKY_HORIZON_TARGET = 0xffd0a0;
+export const SKY_ZENITH_TARGET = 0x70b9e4;
+export const SKY_HORIZON_TARGET = 0xd7edf5;
 
 // --- model constants ---------------------------------------------------------
 

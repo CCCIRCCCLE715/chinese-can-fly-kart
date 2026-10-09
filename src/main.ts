@@ -147,7 +147,7 @@ const systems: System[] = [
 /** Human-readable names for the boot progress readout, indexed with `systems`. */
 const SYSTEM_LABELS = [
   '启动画面', '准备操控', '照亮天空', '准备材质',
-  '铺设赛道', '布置落日湾', '准备赛车', '放置道具箱',
+  '铺设赛道', '布置日式小镇', '准备赛车', '放置道具箱',
   '准备特效', '准备镜头', '准备界面', '准备声音',
   '优化画面',
 ];

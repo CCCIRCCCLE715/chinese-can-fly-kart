@@ -157,7 +157,7 @@ export class Input implements IInput {
   readonly phoneController = new PhoneController();
   state: InputState = {
     steer: 0, accel: 0, brake: 0, accelAuto: false, drift: false, driftPressed: false,
-    itemPressed: false, lookBack: false, pausePressed: false, anyPressed: false,
+    itemPressed: false, bananaPressed: false, gasPressed: false, lookBack: false, pausePressed: false, anyPressed: false,
   };
   touch = false;
 
@@ -174,6 +174,7 @@ export class Input implements IInput {
   /** edge bookkeeping — previous frame's held state per logical button */
   private wasDrift = false;
   private wasItem = false;
+  private wasBanana = false;
   private wasPause = false;
   private wasAny = false;
   private padIndex = -1;
@@ -546,6 +547,7 @@ export class Input implements IInput {
     // the most reachable key on the board on a function two other keys already
     // cover, and left firing on Ctrl — a modifier the OS intercepts.
     let item = hit('Space', 'Enter', 'KeyE', 'ControlLeft', 'ControlRight');
+    let banana = hit('KeyF');
     let look = has('KeyQ', 'AltLeft');
     let pause = hit('Escape', 'KeyP');
     /** true if the player did something deliberate this frame */
@@ -617,7 +619,8 @@ export class Input implements IInput {
       accel = Math.max(accel, rt, b[0]?.pressed ? 1 : 0, b[12]?.pressed ? 1 : 0);
       brake = Math.max(brake, lt, b[1]?.pressed ? 1 : 0, b[13]?.pressed ? 1 : 0);
       drift = drift || !!b[5]?.pressed || !!b[4]?.pressed;
-      item = item || !!b[2]?.pressed || !!b[3]?.pressed;
+      item = item || !!b[2]?.pressed;
+      banana = banana || !!b[3]?.pressed;
       look = look || !!b[10]?.pressed || !!b[11]?.pressed;
       pause = pause || !!b[9]?.pressed || !!b[8]?.pressed;
       if (accel > 0 || brake > 0 || drift || item || look || pause) acted = true;
@@ -639,6 +642,8 @@ export class Input implements IInput {
     // Counters latch short presses even when several network updates arrive
     // between rendered frames. Menus use the same confirm path as a keyboard.
     item = item || remote.events.item || remote.events.confirm;
+    banana = banana || remote.events.banana;
+    s.gasPressed = remote.active && remote.events.gas;
     pause = pause || remote.events.pause;
     if (remote.lost) { accel = 0; brake = 0; drift = false; analogue = 0; }
 
@@ -710,6 +715,8 @@ export class Input implements IInput {
     s.pausePressed = pause && !this.wasPause;
     this.wasDrift = drift;
     this.wasItem = item;
+    s.bananaPressed = banana && !this.wasBanana;
+    this.wasBanana = banana;
     this.wasPause = pause;
 
     // --- item: re-arm while the press is being refused -------------------------
@@ -735,7 +742,7 @@ export class Input implements IInput {
     }
     s.itemPressed = itemPressed;
 
-    if (drift || item || pause || look) acted = true;
+    if (drift || item || banana || pause || look) acted = true;
     s.anyPressed = acted && !this.wasAny;
     this.wasAny = acted;
 

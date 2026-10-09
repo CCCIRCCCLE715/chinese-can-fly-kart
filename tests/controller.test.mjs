@@ -42,7 +42,7 @@ test('摇杆有中位死区和边界，拖出范围也不超出满舵',()=>{
  const diagonal=stickPosition(100,100,50);near(Math.hypot(diagonal.x,diagonal.y),50);
  assert.ok(diagonal.steer<1&&diagonal.steer>0);
 });
-function controllerHarness({permission='granted'}={}){
+function controllerHarness({permission='granted',hostConnected=true,savedSettings=null}={}){
  const elements=new Map();
  const el=id=>{
   if(elements.has(id))return elements.get(id);
@@ -61,8 +61,8 @@ function controllerHarness({permission='granted'}={}){
  const window={orientation:90,addEventListener:(name,fn)=>(events[name]??=[]).push(fn)};
  const screen={orientation:{angle:90,type:'landscape-primary',addEventListener(){}}};
  const document={hidden:false,getElementById:el,querySelectorAll:all,body:el('body'),addEventListener:(name,fn)=>(events[name]??=[]).push(fn)};
- class Socket{static OPEN=1;readyState=0;bufferedAmount=0;constructor(){sockets.push(this)}send(p){packets.push(JSON.parse(p))}open(){this.readyState=1;this.onopen()}close(){this.readyState=3;this.onclose()}message(p){this.onmessage({data:JSON.stringify(p)})}}
- const context={document,window,screen,matchMedia:()=>({matches:wide}),location:{hash:'#'+'a'.repeat(12)+'.'+'b'.repeat(48),protocol:'https:',host:'localhost'},WebSocket:Socket,performance:{now:()=>now},navigator:{},isSecureContext:true,DeviceOrientationEvent:{requestPermission:async()=>{permissionCalls++;return permission}},setInterval:fn=>intervals.push(fn),setTimeout:(fn,ms)=>{timeouts.push({fn,ms});return timeouts.length},clearTimeout(){},rollDegrees,steerFromTilt,angleDifference,screenAngle,createButtonState,localStorage:{getItem:()=>null,setItem(){}}};
+ class Socket{static OPEN=1;readyState=0;bufferedAmount=0;constructor(){sockets.push(this)}send(p){packets.push(JSON.parse(p))}open(){this.readyState=1;this.onopen();this.message({type:'status',connected:true,hostConnected})}close(){this.readyState=3;this.onclose()}message(p){this.onmessage({data:JSON.stringify(p)})}}
+ const context={document,window,screen,matchMedia:()=>({matches:wide}),location:{hash:'#'+'a'.repeat(12)+'.'+'b'.repeat(48),protocol:'https:',host:'localhost'},WebSocket:Socket,performance:{now:()=>now},navigator:{},isSecureContext:true,DeviceOrientationEvent:{requestPermission:async()=>{permissionCalls++;return permission}},setInterval:fn=>intervals.push(fn),setTimeout:(fn,ms)=>{timeouts.push({fn,ms});return timeouts.length},clearTimeout(){},rollDegrees,steerFromTilt,angleDifference,screenAngle,createButtonState,localStorage:{getItem:()=>savedSettings,setItem(){}}};
  const source=readFileSync(new URL('../phone/controller.mjs',import.meta.url),'utf8').replace(/^import .*;\n/gm,'');vm.runInNewContext(source,context);
  const h={el,packets,sockets,window,events,document,timeouts,
   tick(ms=17){now+=ms;intervals[0]()},
@@ -121,4 +121,29 @@ test('体感停止更新会停住，重新收到数据后自动恢复；平放�
  const h=controllerHarness();h.stable();h.tick(700);assert.equal(h.last().enabled,false);
  h.orientation();h.tick();assert.equal(h.last().enabled,true);
  h.orientation(0,0);h.tick();assert.equal(h.last().enabled,false);near(h.last().steer,0);
+});
+
+test('只连上中转服务时不显示已连接，电脑上线后才启用操控',()=>{
+ const h=controllerHarness({hostConnected:false});h.stable();
+ assert.equal(h.last().enabled,false);assert.match(h.el('connection').textContent,/等待电脑/);
+ h.sockets[0].message({type:'status',connected:true,hostConnected:true});
+ assert.equal(h.last().enabled,true);assert.match(h.el('connection').textContent,/体感驾驶中/);
+});
+
+test('phone steering is 35 percent of original strength and auto throttle starts enabled',()=>{
+ const h=controllerHarness();h.stable();assert.equal(h.last().auto,true);
+ for(let i=0;i<30;i++){h.orientation(26,-90);h.tick();}
+ near(h.last().steer,.35);
+});
+
+
+test('unified item button sends one use per press; legacy auto-off is reset on opening',()=>{
+ const h=controllerHarness({savedSettings:JSON.stringify({auto:false,range:26,invert:false})});h.stable();
+ assert.equal(h.last().auto,true);
+ h.el('item').dispatch('pointerdown',{pointerId:51});h.el('item').dispatch('pointerdown',{pointerId:52});
+ assert.equal(h.last().item,1);
+ h.el('item').dispatch('pointerup',{pointerId:51});h.el('item').dispatch('click',{detail:1});assert.equal(h.last().item,1);
+ h.el('item').dispatch('pointerdown',{pointerId:53});assert.equal(h.last().item,2);
+ const html=readFileSync(new URL('../phone/index.html',import.meta.url),'utf8');
+ assert.deepEqual([...html.matchAll(/data-tap="([^"]+)"/g)].map(m=>m[1]),['item']);
 });

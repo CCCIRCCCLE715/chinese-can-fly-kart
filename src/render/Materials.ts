@@ -2380,108 +2380,29 @@ export class Materials implements System {
     return { mat, textures: [...m.all, macroTex] };
   }
 
-  /** Village cobbles: domed setts, deep mortar joints, crowns polished by traffic. */
+  /** Blue-grey, flat rectangular stone slabs in a staggered paving bond. */
   private buildCobble(size: number): Entry {
     const f = new Fields(size);
-    const v = voronoiField(size, 12, 12, 0.72, 41);
-    const micro = fbmField(size, { freq: Math.round(size / 8), octaves: 2, seed: 43 });
-    const chip = fbmField(size, { freq: 30, octaves: 3, seed: 44, mode: 'turbulence' });
-    const damp = fbmField(size, { freq: 3, octaves: 3, seed: 45, warp: 0.05 });
+    const paving = brickField(size, 4, 8, 0.5, 0.035, 0.016, 41);
+    const micro = fbmField(size, { freq: 48, octaves: 2, seed: 43 });
     const grain = grainField(size, 47);
-    const macroTex = this.macroMaps({
-      r: macroField(MACRO_RES, { freq: 2, octaves: 3, warp: 0.14, warpFreq: 2, seed: 46, clip: 0.04 }),
-      g: macroField(MACRO_RES, { freq: 3, octaves: 3, warp: 0.20, warpFreq: 3, seed: 48, clip: 0.06 }),
-      b: macroField(MACRO_RES, { freq: 3, octaves: 2, warp: 0.10, seed: 49, clip: 0.05 }),
-    });
-
-    const pal = [rgb(0x8f887c), rgb(0x7b7469), rgb(0xa1968a), rgb(0x8a8074), rgb(0x9c8c78), rgb(0x77787c)];
-    const mortar = rgb(0x6f6a60);
-
+    const palette = [rgb(0x889fa8), rgb(0x9aacb2), rgb(0x7f98a3), rgb(0xa7b8bd), rgb(0x94aaa9)];
+    const mortar = rgb(0x667c82);
     for (let i = 0; i < size * size; i++) {
-      const gap = v.f2[i] - v.f1[i];
-      const joint = smoothstep(0.0, 0.14, gap); // 0 in the joint, 1 on the stone
-      const dome = Math.pow(joint, 0.45);
-      const id = v.id[i];
-      const stone = pal[id % pal.length];
-      const tint = hash2(id, 3, 9);
-      mixRGB(stone, pal[(id * 7 + 3) % pal.length], tint * 0.45, _a);
-      // Sett-group banding. Real setts are laid in arcs and the arcs are cut from
-      // different loads of stone, so a cobbled street has 1.5-3 m bands of
-      // colour running across it. Every frequency in this material used to live
-      // at the 20 cm sett, which is a flat mip by 25 m — from the establishing
-      // shot the whole village-climb section lost its identity and read as one
-      // lavender-grey sheet. This band is a whole-tile cycle (2.4 m), so it is in
-      // mip 0 and mip 5 alike, and it is quantised into a handful of discrete
-      // groups because a smooth gradient reads as lighting, not as masonry.
-      const gy = ((id / v.cellsX) | 0) / v.cellsY;
-      const gx = (id % v.cellsX) / v.cellsX;
-      const arc = Math.sin(gy * Math.PI * 2) * 0.5 + Math.cos(gx * Math.PI * 2) * 0.2;
-      const group = hash2(Math.round(arc * 2.49), 71, 13);
-
-      // crown wear: the top of each sett is lighter and much smoother
-      const crown = smoothstep(0.55, 1.0, dome) * (0.7 + hash2(id, 11, 5) * 0.6);
-      const chipped = smoothstep(0.62, 0.86, chip[i]) * joint;
-      const wet = smoothstep(0.55, 0.85, damp[i]);
-
-      mixRGB(mortar, _a, joint, _b);
-      const tone =
-        (0.88 + tint * 0.2 + crown * 0.14 - wet * 0.22 + (micro[i] - 0.5) * 0.16 + (grain[i] - 0.5) * 0.05 +
-          (group - 0.5) * 0.26 * joint) *
-        (1 - chipped * 0.12);
-      f.set(i, _b.r * tone, _b.g * tone, _b.b * tone);
-
-      const h = dome * 0.85 + micro[i] * 0.08 * joint - chipped * 0.12;
-      // The polished crowns are also grouped: a band of harder stone wears
-      // smoother than the band beside it, so the roughness varies across the
-      // road width and not only along the racing line.
-      const rough = clamp(
-        0.86 - crown * 0.42 * (0.7 + group * 0.6) - wet * 0.14 + chipped * 0.1 +
-          (micro[i] - 0.5) * 0.14 - joint * 0.06,
-        0.22,
-        0.98,
-      );
-      const ao = 1 - (1 - joint) * 0.62 - (1 - dome) * 0.12;
-      f.surf(i, h, ao, rough);
+      const edge = paving.edge[i];
+      const face = smoothstep(0, 0.10, edge);
+      const bevel = smoothstep(0, 0.24, edge);
+      const id = paving.id[i];
+      const stone = palette[id % palette.length];
+      mixRGB(mortar, stone, face, _a);
+      const tone = 0.94 + hash2(id, 3, 9) * 0.1 + (micro[i] - 0.5) * 0.06 + (grain[i] - 0.5) * 0.025;
+      f.set(i, _a.r * tone, _a.g * tone, _a.b * tone);
+      f.surf(i, bevel * 0.18 + micro[i] * face * 0.014, 0.72 + face * 0.28, 0.76 + (1 - face) * 0.14);
     }
-
-    const m = this.maps(f, { normalStrength: 0.9 });
-    const mat = this.std(m, { envMapIntensity: 0.9 });
-    injectBreakup(mat, {
-      macroTex,
-      period: 13.9,
-      strength: 0.52,
-      periodB: 4.4,
-      strengthB: 0.32,
-      // sun-baked setts in the middle of the lane, damp cool ones in the shade of
-      // the terraces — the village's own warm/cool split, at street scale
-      macroWarm: 0xffeed6,
-      macroCool: 0xd6dfea,
-      macroTint: 0.44,
-      macroRough: 0.24,
-      macroB: true,
-      periodMacroB: 7.5,
-      macroRoughB: 0.20,
-      stain: [0.45, 0.45],
-      stainTint: 0x77726a,
-      stainRange: [0.64, 0.95],
-      // A cobbled lane is worn in wheel tracks like any other road, and V runs
-      // down the street. Without this the setts are the one isotropic surface
-      // left on the course and the eye goes straight to them.
-      streak: [0.30, 0.035, 0.045, -0.15],
-      settle: [40, 110],
-      settleRough: 0.78,
-      // the village's cobbles carry a wear mask on the mesh too, and a polished
-      // sett crown is glossier as well as lighter
-      wearGloss: 1.1,
-      // A polished sett crown at roughness 0.22 is a 4 cm mirror, and there are
-      // roughly nine hundred of them per screen at the top of the village
-      // climb. Both terms exist to stop that being nine hundred pinpoints.
-      roughFloor: 0.34,
-      specAA: 1.0,
-      macroNormal: 0.35,
-    });
+    const maps = this.maps(f, { normalStrength: 0.45 });
+    const mat = this.std(maps, { envMapIntensity: 0.35 });
     this.envConsumers.push(mat);
-    return { mat, textures: [...m.all, macroTex] };
+    return { mat, textures: maps.all };
   }
 
   /**
@@ -2984,8 +2905,8 @@ export class Materials implements System {
     });
     const bench = fbmField(size, { freq: 2, octaves: 2, seed: 100, stretchY: 3.6, warp: 0.05, normalize: 0.03 });
 
-    const stone = rgb(0xa8927a);
-    const shade = rgb(0x6d5d4c);
+    const stone = rgb(0x92a2a3);
+    const shade = rgb(0x5d7274);
     // The bleach was the source of the orange: pushed by the golden-hour key and
     // the saturation lift, #c9b79c goes tangerine. Cooled and pulled back so the
     // face reads as the bible's #a8927a limestone at any exposure.
@@ -2996,7 +2917,7 @@ export class Materials implements System {
     // §3's stone is #a8927a. The pale beds are still pale — they are just pale
     // *limestone* now, and the range they used to spend going toward white is
     // spent going toward the shade colour instead, which is where the reading is.
-    const bleach = rgb(0xb2a48e);
+    const bleach = rgb(0xaab9b7);
     const lichenC = rgb(0x85946a);
 
     for (let i = 0; i < size * size; i++) {
@@ -3520,7 +3441,7 @@ export class Materials implements System {
       b: macroField(MACRO_RES, { freq: 3, octaves: 2, warp: 0.10, seed: 128, clip: 0.05 }),
     });
 
-    const pal = [rgb(0xb5643f), rgb(0x9d5236), rgb(0xc9825c), rgb(0xa85a3a), rgb(0xbd7350)];
+    const pal = [rgb(0xe3e8eb), rgb(0xd7dfe4), rgb(0xeff1f2), rgb(0xdce3e9), rgb(0xe1e7eb)];
     const mossC = rgb(0x7f8a58);
     const chalkC = rgb(0xd6c3ae);
 
@@ -3541,7 +3462,7 @@ export class Materials implements System {
 
       const mv = microValue(mic, i);
       mixRGB(tileC, chalkC, chalkM * 0.25, _a);
-      mixRGB(_a, mossC, mossM * 0.55, _b);
+      mixRGB(_a, mossC, mossM * 0.12, _b);
       const tone = 0.86 + bias * 0.2 + barrel * 0.14 + (mv - 0.5) * 0.1 + (grain[i] - 0.5) * 0.05;
       f.set(i, _b.r * tone, _b.g * tone, _b.b * tone);
 
@@ -3563,12 +3484,12 @@ export class Materials implements System {
     injectBreakup(mat, {
       macroTex,
       period: 11.7,
-      strength: 0.42,
+      strength: 0.15,
       periodB: 3.8,
-      strengthB: 0.27,
+      strengthB: 0.10,
       macroWarm: 0xffe6c8,
       macroCool: 0xdfe2e0,
-      macroTint: 0.42,
+      macroTint: 0.08,
       macroRough: 0.24,
       // moss and rain run down the pitch, i.e. along V, from the ridge
       streak: [0.5, 0.06, 0.05, 0.14],
@@ -4860,7 +4781,7 @@ export class Materials implements System {
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.translate(size * 0.5, size * 0.5);
-    g.fillText('落日湾', 0, 0);
+    g.fillText('樱花町', 0, 0);
     g.restore();
     g.save();
     g.fillStyle = '#1d2a33';

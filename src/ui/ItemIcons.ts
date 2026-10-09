@@ -59,12 +59,14 @@ const INK = '#241a2e';
 const LW = 0.055;
 
 export const ITEM_NAMES: Record<number, string> = {
+  [ItemKind.Rocket]: '中国人能飞',
+  [ItemKind.Gas]: '放屁',
   [ItemKind.None]: '',
   [ItemKind.Mushroom]: '加速罐',
   [ItemKind.TripleMushroom]: '三连加速',
   [ItemKind.GreenShell]: '玻璃浮球',
   [ItemKind.RedShell]: '追踪浮球',
-  [ItemKind.Banana]: '柠檬',
+  [ItemKind.Banana]: '香蕉',
   [ItemKind.Star]: '黄金时刻',
   [ItemKind.Bolt]: '风暴',
   [ItemKind.Bomb]: '港湾水雷',
@@ -74,6 +76,8 @@ export const ITEM_NAMES: Record<number, string> = {
 export const ITEM_TINT: Record<number, string> = {
   // Neutral, and deliberately NOT gold: the empty slot must not borrow the
   // colour that means "you are in first".
+  [ItemKind.Rocket]: '#ff4848',
+  [ItemKind.Gas]: '#edce58',
   [ItemKind.None]: '#8fa0bb',
   [ItemKind.Mushroom]: '#ff8a3d',
   [ItemKind.TripleMushroom]: '#ff9d4a',
@@ -86,16 +90,7 @@ export const ITEM_TINT: Record<number, string> = {
 };
 
 /** Cycling order for the roulette — mixes hues so the spin looks lively. */
-export const ROULETTE_ORDER: ItemKind[] = [
-  ItemKind.Mushroom,
-  ItemKind.GreenShell,
-  ItemKind.Banana,
-  ItemKind.Star,
-  ItemKind.RedShell,
-  ItemKind.TripleMushroom,
-  ItemKind.Bolt,
-  ItemKind.Bomb,
-];
+export const ROULETTE_ORDER: ItemKind[] = [ItemKind.Banana, ItemKind.Gas, ItemKind.Rocket];
 
 /**
  * Optical-centroid correction per icon, in unit-box coordinates. Positive
@@ -552,7 +547,37 @@ function drawEmptyBox(g: G) {
   g.fill(dot);
 }
 
+function drawRocket(g: G) {
+  for (const side of [-1, 1]) {
+    const wing = new Path2D(); wing.moveTo(side*.13,-.2); wing.lineTo(side*.4,-.33);
+    wing.lineTo(side*.48,-.06); wing.lineTo(side*.15,.12); wing.closePath();
+    lit(g,wing,'#ff6262','#b91625');
+    g.fillStyle='#f4f5f6'; g.fillRect(side<0?-.34:.27,-.2,.065,.19);
+    const flame=new Path2D(); flame.moveTo(side*.11-.06,.2); flame.lineTo(side*.11+.06,.2);
+    flame.lineTo(side*.11,.45); flame.closePath(); g.fillStyle='#62dfff';g.fill(flame);
+  }
+  const shell=new Path2D();shell.roundRect(-.16,-.31,.32,.55,.055);
+  lit(g,shell,'#ffffff','#a9b3c0');
+  g.fillStyle='#d82c36'; g.fillRect(-.05,-.12,.1,.1);
+}
+
+function drawGas(g: G) {
+  g.save();
+  const shade=g.createLinearGradient(0,-.35,0,.3);
+  shade.addColorStop(0,'#fff0a4');shade.addColorStop(1,'#c69829');
+  g.fillStyle=shade;g.strokeStyle=INK;g.lineWidth=LW;
+  g.beginPath();g.moveTo(-.32,.23);
+  g.bezierCurveTo(-.55,.19,-.48,-.14,-.27,-.12);
+  g.bezierCurveTo(-.31,-.44,.08,-.46,.14,-.22);
+  g.bezierCurveTo(.41,-.35,.55,-.02,.34,.10);
+  g.bezierCurveTo(.49,.32,.02,.38,-.06,.24);
+  g.bezierCurveTo(-.14,.34,-.25,.31,-.32,.23);
+  g.closePath();g.fill();g.stroke();g.restore();
+}
+
 const TABLE: Record<number, (g: G) => void> = {
+  [ItemKind.Rocket]: drawRocket,
+  [ItemKind.Gas]: drawGas,
   [ItemKind.None]: drawEmptyBox,
   [ItemKind.Mushroom]: drawTurboCan,
   [ItemKind.TripleMushroom]: drawTripleTurbo,

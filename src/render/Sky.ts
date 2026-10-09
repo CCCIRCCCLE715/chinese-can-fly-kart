@@ -125,7 +125,7 @@ import { TUNNEL_T0, TUNNEL_T1 } from '../world/TrackLayout';
  * wrap) and Effects (particle lighting). All three clamp, and all three now sit
  * ON their clamp — see the report; they want re-scaling against 8.0.
  */
-const SUN_INTENSITY = 13.5;
+const SUN_INTENSITY = 5.2;
 /*
  * ROUND 3, and the number above is the whole of this round's headline.
  *
@@ -352,7 +352,7 @@ const BOUNCE_INTENSITY = 0.13;
  * Flat road, shadowed, this light alone: 0.151 -> 0.119. Anti-solar wall:
  * 0.382 -> 0.392.
  */
-const SKY_FILL_INTENSITY = 0.72;
+const SKY_FILL_INTENSITY = 1.05;
 /**
  * How much of the cool fill survives on a surface the KEY is already reaching.
  *
@@ -455,7 +455,7 @@ const LATERAL_BOUNCE_SLOPE = -0.14;
  * sRGB 9, and the near-black fraction is unchanged from round 2.
  */
 const FLOOR_IRRADIANCE = 0.185;
-const FLOOR_COLOR = 0x6f9cb4;
+const FLOOR_COLOR = 0x91acb7;
 /**
  * The same floor inside an interior volume, warm sodium instead of teal. The
  * tunnel's premise is sodium strips; rock that falls off the bottom of the

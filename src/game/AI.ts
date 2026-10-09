@@ -1,3 +1,4 @@
+import { OpponentPace } from './OpponentPace';
 /**
  * ============================================================================
  *  AI — racing line solver + driver model
@@ -1211,6 +1212,7 @@ const ASSIST_LEASH = 0.6;
 
 export class AIField {
   readonly line = new RacingLine();
+  readonly pace = new OpponentPace();
   private drivers = new Map<number, AIDriver>();
   private bands = new Map<number, number>();
   private assists = new Map<number, number>();
@@ -1220,7 +1222,8 @@ export class AIField {
     this.line.build(ctx.track);
     for (const k of karts) {
       this.drivers.set(k.id, new AIDriver(k, this.line, k.id + 1));
-      this.bands.set(k.id, 1);
+      k.paceScale = k.isPlayer ? 1 : this.pace.forKart(k.id);
+      this.bands.set(k.id, k.paceScale);
       this.assists.set(k.id, 0);
     }
   }
@@ -1234,70 +1237,22 @@ export class AIField {
   }
 
   reset() {
+    this.pace.reset();
     for (const d of this.drivers.values()) d.reset();
     for (const key of this.bands.keys()) {
-      this.bands.set(key, 1);
+      this.bands.set(key, this.pace.forKart(key));
       this.assists.set(key, 0);
     }
   }
 
-  /**
-   * Rubber band, recomputed once a frame for the whole field.
-   *
-   * Two levers, both restrained, and neither applied to the player:
-   *
-   *  - `band` scales the target speed, which only bites in the corners. On a
-   *    circuit this fast that is a handful of seconds a lap, so on its own it
-   *    does very little — which is exactly why the second lever exists.
-   *  - `assist` is a small longitudinal acceleration, well under half of the
-   *    aerodynamic drag at speed, applied through the sanctioned `launch`
-   *    command. Read it as a slipstream for the chasers and dirty air for the
-   *    leader: it shifts the equilibrium top speed by a few percent, it does
-   *    NOT touch `boostTime`, so nothing lights up, and a kart being helped
-   *    still has to actually drive the corner.
-   *
-   * Neither can rescue a driver who is off the road, and neither is enough to
-   * overturn a genuinely quick lap. It only stops the field being strung out
-   * over half a lap by the final tour.
-   */
+  /** Time-gap state machine with quarter-lap transitions and individual variation. */
   beginFrame(karts: readonly IKart[], player: IKart, dt: number) {
-    // Karts that have taken the flag are excluded from the reference. They keep
-    // circulating for the results-screen backdrop and their `raceDistance` keeps
-    // climbing, so leaving them in meant that the moment the winner crossed the
-    // line every kart still racing was measured against a car that was already
-    // most of a lap "ahead": the catch-up term pinned itself to maximum for the
-    // rest of the race and the leash never engaged again, because no live kart
-    // could ever be the leader.
-    let leadDist = -Infinity;
-    for (const k of karts) if (!k.finished && k.raceDistance > leadDist) leadDist = k.raceDistance;
-    if (leadDist === -Infinity) for (const k of karts) if (k.raceDistance > leadDist) leadDist = k.raceDistance;
-
+    this.pace.update(karts, player, this.line.length, dt);
     for (const k of karts) {
-      if (k.isPlayer) continue;
-      const gapToLead = leadDist - k.raceDistance;
-      const gapToPlayer = player ? k.raceDistance - player.raceDistance : 0;
-      const leading = gapToLead < 1;
-
-      let band = 1;
-      let assist = 0;
-
-      // catch-up: nothing inside 30 m, saturating at 110 m adrift
-      const behind = clamp((gapToLead - 30) / 80, 0, 1);
-      band += behind * 0.05;
-      assist += behind * ASSIST_CATCHUP;
-
-      // leash: only the actual leader, and only once genuinely clear ahead
-      if (leading) {
-        const clear = clamp((gapToPlayer - 40) / 110, 0, 1);
-        band -= clear * 0.04;
-        assist -= clear * ASSIST_LEASH;
-      }
-
-      const prev = this.bands.get(k.id) ?? 1;
-      // slew-limited so a lap-counter flip cannot snap everyone's pace at once
-      this.bands.set(k.id, prev + clamp(band - prev, -dt * 0.3, dt * 0.3));
-      const pa = this.assists.get(k.id) ?? 0;
-      this.assists.set(k.id, pa + clamp(assist - pa, -dt * 1.2, dt * 1.2));
+      const pace=k.isPlayer ? 1 : this.pace.forKart(k.id);
+      this.bands.set(k.id, pace);
+      k.paceScale=pace;
+      this.assists.set(k.id, 0);
     }
   }
 
@@ -1316,7 +1271,7 @@ export class AIField {
     const towed = (ctx.items as Partial<Towable>).towing?.(k) ?? ItemKind.None;
     drv.update(
       ctx, dt, karts, this.hazards,
-      this.bands.get(k.id) ?? 1,
+      k.isPlayer ? 1 : (this.bands.get(k.id) ?? .85),
       held.kind, held.count, racing, towed,
     );
     return drv.cmd;

@@ -140,6 +140,10 @@ export interface InputState {
   driftPressed: boolean;
   /** rising edge of item use this frame */
   itemPressed: boolean;
+  /** Dedicated permanent banana skill, one throw per press. */
+  bananaPressed: boolean;
+  /** Independent permanent phone gas skill. */
+  gasPressed: boolean;
   /** rising edge — look behind */
   lookBack: boolean;
   /** rising edge — pause / confirm */
@@ -172,6 +176,8 @@ export interface IKart {
   readonly id: number;
   readonly isPlayer: boolean;
   readonly stats: KartStats;
+  /** AI pace multiplier; player remains at 1. */
+  paceScale: number;
 
   /** root object — position is the chassis centre of mass */
   readonly object: THREE.Object3D;
@@ -202,6 +208,7 @@ export interface IKart {
   driftTier: number;
   /** seconds of boost remaining */
   boostTime: number;
+  rocketTime: number;
   airborne: boolean;
   /** seconds remaining of a spin-out / squash / stun */
   stunTime: number;
@@ -212,6 +219,7 @@ export interface IKart {
   readonly wheels: THREE.Object3D[];
 
   // --- commands other systems may issue ---
+  activateRocket(): boolean;
   applyBoost(seconds: number, strength?: number): void;
   spinOut(seconds: number): void;
   squash(seconds: number): void;
@@ -233,6 +241,8 @@ export const enum ItemKind {
   Star = 6,
   Bolt = 7,
   Bomb = 8,
+  Rocket = 9,
+  Gas = 10,
 }
 
 export interface IItems extends System {
@@ -243,6 +253,8 @@ export interface IItems extends System {
   give(kart: IKart, kind: ItemKind, count?: number): void;
   /** fire/drop whatever the kart holds; returns false if it holds nothing */
   use(kart: IKart, backwards: boolean): boolean;
+  throwBanana(kart: IKart): boolean;
+  releaseGas(kart: IKart): boolean;
   /** open the roulette on the HUD for this kart */
   pickup(kart: IKart): void;
 }

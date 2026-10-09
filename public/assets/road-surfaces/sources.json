@@ -1,0 +1,113 @@
+{
+  "assets": [
+    {
+      "id": "gravel_ground_01",
+      "source": "https://polyhaven.com/a/gravel_ground_01",
+      "license": "CC0-1.0",
+      "maps": {
+        "albedo": {
+          "path": "/assets/road-surfaces/gravel_ground_01-albedo.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/gravel_ground_01/gravel_ground_01_diff_1k.jpg",
+          "md5": "ee99ef89fb50cfeb198db369bb7151f0",
+          "bytes": 954257
+        },
+        "normal": {
+          "path": "/assets/road-surfaces/gravel_ground_01-normal.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/gravel_ground_01/gravel_ground_01_nor_gl_1k.jpg",
+          "md5": "8a54072ce38665da29081d57dc10cb69",
+          "bytes": 1314248
+        },
+        "roughness": {
+          "path": "/assets/road-surfaces/gravel_ground_01-roughness.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/gravel_ground_01/gravel_ground_01_rough_1k.jpg",
+          "md5": "65bfe11a3fa71c9ac3f07ca09a4dbd88",
+          "bytes": 379669
+        }
+      },
+      "physicalWidthMetres": 3
+    },
+    {
+      "id": "sandy_gravel",
+      "source": "https://polyhaven.com/a/sandy_gravel",
+      "license": "CC0-1.0",
+      "maps": {
+        "albedo": {
+          "path": "/assets/road-surfaces/sandy_gravel-albedo.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sandy_gravel/sandy_gravel_diff_1k.jpg",
+          "md5": "9808ac7c155cff11314a4fe200255c50",
+          "bytes": 795227
+        },
+        "normal": {
+          "path": "/assets/road-surfaces/sandy_gravel-normal.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sandy_gravel/sandy_gravel_nor_gl_1k.jpg",
+          "md5": "df94f818fdfab5afdaf11add554f51e7",
+          "bytes": 1159620
+        },
+        "roughness": {
+          "path": "/assets/road-surfaces/sandy_gravel-roughness.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sandy_gravel/sandy_gravel_rough_1k.jpg",
+          "md5": "8e87e04dcb2c15ac65dd3f2996f55452",
+          "bytes": 396818
+        }
+      },
+      "physicalWidthMetres": 2.1
+    },
+    {
+      "id": "brown_mud_dry",
+      "source": "https://polyhaven.com/a/brown_mud_dry",
+      "license": "CC0-1.0",
+      "maps": {
+        "albedo": {
+          "path": "/assets/road-surfaces/brown_mud_dry-albedo.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_mud_dry/brown_mud_dry_diff_1k.jpg",
+          "md5": "0c0ad82fec60f091690c69c23657cb74",
+          "bytes": 920456
+        },
+        "normal": {
+          "path": "/assets/road-surfaces/brown_mud_dry-normal.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_mud_dry/brown_mud_dry_nor_gl_1k.jpg",
+          "md5": "a842517bea5187ccbceb69fd26629d1e",
+          "bytes": 1539092
+        },
+        "roughness": {
+          "path": "/assets/road-surfaces/brown_mud_dry-roughness.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_mud_dry/brown_mud_dry_rough_1k.jpg",
+          "md5": "4e047a601af768eded6468faab4ec615",
+          "bytes": 390385
+        }
+      },
+      "physicalWidthMetres": 1.3
+    },
+    {
+      "id": "gravel_stones",
+      "source": "https://polyhaven.com/a/gravel_stones",
+      "license": "CC0-1.0",
+      "physicalWidthMetres": 2,
+      "maps": {
+        "albedo": {
+          "path": "/assets/road-surfaces/gravel_stones-albedo.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/gravel_stones/gravel_stones_diff_1k.jpg",
+          "md5": "0e04ba65c86cbc55554877bad6a40354",
+          "bytes": 802344
+        },
+        "normal": {
+          "path": "/assets/road-surfaces/gravel_stones-normal.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/gravel_stones/gravel_stones_nor_gl_1k.jpg",
+          "md5": "ae11c45b9bf93346c4b521ab02ec165d",
+          "bytes": 1485214
+        },
+        "roughness": {
+          "path": "/assets/road-surfaces/gravel_stones-roughness.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/gravel_stones/gravel_stones_rough_1k.jpg",
+          "md5": "c1447058cea79417f1d19a4d8be8be28",
+          "bytes": 643561
+        }
+      }
+    }
+  ],
+  "active": [
+    "gravel_stones",
+    "gravel_ground_01",
+    "brown_mud_dry"
+  ]
+}

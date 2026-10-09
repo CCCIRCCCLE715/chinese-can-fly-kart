@@ -20,6 +20,7 @@
  * ============================================================================
  */
 import * as THREE from 'three';
+import { townWeight, pavingWeight } from './TownLayout';
 import { Surface } from '../types';
 import { createNoise2D } from 'simplex-noise';
 
@@ -899,6 +900,30 @@ export function buildCenterline(): Centerline {
     else { cl.wallR[i] = dom.wallR; cl.wallOffR[i] = dom.wallOffR; }
   }
 
+  // Town terrain is a broad buildable shelf on both sides. Blend the original
+  // landscape at the ends; the tunnel and bridge retain their authored profiles.
+  for (let i = 0; i < count; i++) {
+    const weight = townWeight(i / count);
+    if (weight <= 0) continue;
+    const mix = (a: number, b: number) => a + (b - a) * weight;
+    for (const side of ['L', 'R'] as const) {
+      cl[`near${side}0`][i] = mix(cl[`near${side}0`][i], 0);
+      cl[`near${side}1`][i] = mix(cl[`near${side}1`][i], 0.12);
+      cl[`near${side}2`][i] = mix(cl[`near${side}2`][i], 0.65);
+      cl[`far${side}`][i] = mix(cl[`far${side}`][i], cl.py[i] + 5);
+      cl[`farD${side}`][i] = mix(cl[`farD${side}`][i], 140);
+      cl[`rock${side}`][i] = mix(cl[`rock${side}`][i], 0.08);
+      cl[`shoulder${side}`][i] = mix(cl[`shoulder${side}`][i], 7);
+      if (weight > 0.5) {
+        cl[`wall${side}`][i] = WALL_GUARDRAIL;
+        cl[`wallOff${side}`][i] = 2.7;
+        cl[`surf${side}`][i] = Surface.Grass;
+      }
+    }
+    cl.cobble[i] = pavingWeight(i / count);
+    cl.kerb[i] = mix(cl.kerb[i], 0);
+  }
+  for (let i = 0; i < count; i++) cl.cobble[i] = pavingWeight(i / count);
   return cl;
 }
 

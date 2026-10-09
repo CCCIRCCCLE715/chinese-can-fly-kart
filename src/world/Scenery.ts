@@ -20,6 +20,13 @@ import type { Ctx, System, TrackSample } from '../types';
 import { Surface } from '../types';
 import { Water, type SeaField } from './Water';
 import { Foliage } from './Foliage';
+import { buildJapaneseHouse as buildHouse } from './JapaneseTown';
+import { TOWN_SECTIONS, isTown } from './TownLayout';
+import { makeTownSigns, TOWN_SIGN_COUNT } from './TownSigns';
+import { ImportedTown } from './ImportedTown';
+import {SAKURA_FORMS} from './SakuraVariation';
+import { makeTownPlan, TOWN_PARKS } from './TownPlan';
+import { splitStaticGeometry } from './SpatialGeometry';
 import {
   GeoAccum,
   InstSet,
@@ -31,11 +38,10 @@ import {
   bannerArchGeo,
   bannerUvs,
   barrelGeo,
-  bellTowerGeo,
   bevelBox,
+  plainBox,
   boatGeo,
   bollardGeo,
-  buildHouse,
   buntingFlagGeo,
   buoyGeo,
   card,
@@ -61,6 +67,9 @@ import {
   newHouseParts,
   parasolGeo,
   patchAerial,
+  patchInstUv,
+  patchLod,
+  patchWind,
   patchBob,
   patchTint,
   pick,
@@ -77,7 +86,6 @@ import {
   trs,
   tyreGeo,
   wallSignGeo,
-  windmillGeo,
   type RidgeFlank,
   type RNG,
   type Shared,
@@ -277,9 +285,9 @@ const BACKDROP_BANDS: BackdropBand[] = [
   // coast — headlands FLANKING the bay; never across it. The darkest thing on
   // the horizon: it is the nearest, and the near end of an aerial ramp is where
   // the contrast lives.
-  { offset: 120, slots: 20, jitter: 0.14, height: [26, 62], depth: [150, 250], jag: 1.15, shoulder: 0.1, segs: 64, rings: 9, crest: 0x7d6f52, foot: 0x3f4a2c, haze: 0.03, tint: 0xa89a80, seaClear: 0.61, seaChance: 0.0, seaH: 1.0, dress: true, terraces: true },
+  { offset: 120, slots: 20, jitter: 0.14, height: [26, 62], depth: [150, 250], jag: 1.15, shoulder: 0.1, segs: 64, rings: 9, crest: 0x7c9b84, foot: 0x496451, haze: 0.03, tint: 0xa8c3bc, seaClear: 0.61, seaChance: 0.0, seaH: 1.0, dress: true, terraces: true },
   // near — the cypress-crested hills the village climbs into
-  { offset: 380, slots: 18, jitter: 0.12, height: [80, 175], depth: [300, 460], jag: 1.05, shoulder: 0.28, segs: 68, rings: 9, crest: 0x94866a, foot: 0x50593a, haze: 0.08, tint: 0xb0a894, seaClear: 0.20, seaChance: 0.5, seaH: 0.85, dress: true, terraces: true },
+  { offset: 380, slots: 18, jitter: 0.12, height: [80, 175], depth: [300, 460], jag: 1.05, shoulder: 0.28, segs: 68, rings: 9, crest: 0x9eb7a5, foot: 0x577660, haze: 0.08, tint: 0xbbd1cb, seaClear: 0.20, seaChance: 0.5, seaH: 0.85, dress: true, terraces: true },
   // range — a real mountain range across the bay
   { offset: 950, slots: 16, jitter: 0.10, height: [190, 330], depth: [520, 760], jag: 1.3, shoulder: 0.4, segs: 80, rings: 8, crest: 0xa8adb4, foot: 0x77808c, haze: 0.16, tint: 0xb8bfcb, seaClear: 0.0, seaChance: 0.38, seaH: 0.55, dress: true, terraces: true },
   // far — the last silhouette before the sky
@@ -300,6 +308,9 @@ export class Scenery implements System {
   private flatWorld = false;
   private seaSideLUT = new Float32Array(128);
   private rotor: THREE.Object3D | null = null;
+  private townSignTexture: THREE.Texture | null = null;
+  private importedTown = new ImportedTown();
+  private parkMaterials: THREE.Material[] = [];
   private cheer = 0;
   private cheerTarget = 0;
   private busOff: (() => void) | null = null;
@@ -312,7 +323,7 @@ export class Scenery implements System {
   // Lifecycle
   // ==========================================================================
 
-  init(ctx: Ctx) {
+  async init(ctx: Ctx) {
     this.ctx = ctx;
     this.rng = mulberry32(0xbacafe);
     this.group.name = 'scenery';
@@ -327,9 +338,10 @@ export class Scenery implements System {
     this.group.add(this.water.group);
 
     this.makeSets();
+    await this.importedTown.load(ctx.envMap,ctx.renderer);
+    this.dressVillage();
     this.dressStartStraight();
     this.dressHarbour();
-    this.dressVillage();
     this.dressCliff();
     this.dressBeach();
     this.dressBankedCurve();
@@ -354,6 +366,8 @@ export class Scenery implements System {
     this.dressNearFrame();
     this.dressGulls();
     this.emit();
+    this.importedTown.finish();
+    this.group.add(this.importedTown.group);
 
     ctx.scene.add(this.group);
 
@@ -387,6 +401,7 @@ export class Scenery implements System {
 
     if (this.rotor) this.rotor.rotation.z -= dt * (0.42 + u.uWindAmp.value * 0.3);
     this.water.update(ctx);
+    this.importedTown.update(ctx.camera);
     if (ctx.envMap) this.mats.setEnv(ctx.envMap);
   }
 
@@ -394,6 +409,9 @@ export class Scenery implements System {
     this.busOff?.();
     this.water.dispose();
     this.mats.dispose();
+    this.townSignTexture?.dispose();
+    this.importedTown.dispose();
+    this.parkMaterials.forEach(m => m.dispose());
     this.group.traverse((o) => {
       const m = o as THREE.Mesh;
       if (m.geometry) m.geometry.dispose();
@@ -805,6 +823,15 @@ export class Scenery implements System {
     const ws = wallSignGeo();
     S('wallsign', ws.frame, M.metal);
     S('wallsignPanel', ws.panel, M.sponsor);
+    const signs = new THREE.MeshStandardMaterial({ map: (this.townSignTexture = makeTownSigns()), roughness: 0.88 });
+    M.register(signs); patchInstUv(signs); patchLod(signs, this.u);
+    S('townSign', new THREE.PlaneGeometry(1, 1), signs);
+    const lantern = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x681410, emissiveIntensity: 0.18, roughness: 0.65 });
+    M.register(lantern); patchTint(lantern); patchLod(lantern, this.u);
+    S('townLantern', new THREE.SphereGeometry(1, 12, 8), lantern);
+    const blossom = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88 });
+    M.register(blossom); patchTint(blossom); patchWind(blossom, this.u); patchLod(blossom, this.u);
+    S('sakura', new THREE.IcosahedronGeometry(1, 2), blossom);
     S('shadow', this.shadowQuad(), M.shadowDecal);
     S('verge', this.vergeStripGeo(), M.vergeDecal);
 
@@ -1402,37 +1429,237 @@ export class Scenery implements System {
     });
   }
 
-  /** 0.22–0.38: village climb — terraced houses both sides. */
+  /** Scenic side streets and mixed lots; the driving loop itself is unchanged. */
   private dressVillage() {
-    const rng = this.rng;
-    const anchors: THREE.Vector3[] = [];
-    for (const side of [-1, 1]) {
-      this.terrace(0.225, 0.385, side, 5.5, rng, anchors);
-      // a second, taller row set back up the hillside
-      if (rng() < 0.95) this.terrace(0.235, 0.375, side, 24, rng, anchors, 1);
-    }
-    // laundry strung between whatever anchors ended up facing each other
-    this.stringLaundry(anchors, rng);
-
-    // cypress punctuation + potted greenery along the street
-    this.walk(0.225, 0.385, 13, (t, s) => {
-      for (const side of [-1, 1]) {
-        if (this.isSea(t, side * (s.halfWidth + 4), s)) continue;
-        if (rng() < 0.5) {
-          this.at(t, side * (s.halfWidth + 3.4 + rng() * 1.6), _p, s);
-          this.settle(_p, t);
-          this.foliage.cyp(_p.clone(), 0.75 + rng() * 0.45, rng() * 6.28, t);
-        }
-        if (rng() < 0.6) {
-          this.at(t, side * (s.halfWidth + 2.4 + rng()), _p, s);
-          this.settle(_p, t);
-          this.foliage.bush(_p.clone(), 0.5 + rng() * 0.35, rng() * 6.28, t);
-        }
+    const rng = mulberry32(0x5a4b2026);
+    const track = this.ctx.track;
+    const plan = makeTownPlan(track.length, TOWN_SECTIONS, this.importedTown.blueprints);
+    this.dressTownParks(rng);
+    let backstreetSegments=0;
+    // Cross alleys connect to quieter streets between the two rows of homes.
+    for(const [a,b] of TOWN_SECTIONS)for(const side of [-1,1]){
+      let points:{p:THREE.Vector3;t:number}[]=[];
+      const flush=()=>{if(points.length>1){this.townPath(points,4.2,0x9babae);backstreetSegments++;}points=[];};
+      for(let d=a*track.length+6;d<b*track.length-6;d+=3){
+        const t=d/track.length,sample=track.sample(t),lat=side*(sample.halfWidth+23);
+        if(TOWN_PARKS.some(p=>p.side===side&&Math.abs(d-p.t*track.length)<p.width/2+4)||this.isSea(t,lat,sample)){flush();continue;}
+        this.at(t,lat,_p,sample);this.settle(_p,t);points.push({p:_p.clone(),t});
       }
-    });
-    this.barrierCrowd(0.24, 0.37, 1, 0.34);
-    this.barrierCrowd(0.24, 0.37, -1, 0.34);
-    this.villagePlaza();
+      flush();
+    }
+    for (const lane of plan.lanes) {
+      const sample=track.sample(lane.t),points:{p:THREE.Vector3;t:number}[]=[];
+      for(let d=3;d<=3+lane.depth;d+=1.5){this.at(lane.t,lane.side*(sample.halfWidth+d),_p,sample);this.settle(_p,lane.t);points.push({p:_p.clone(),t:lane.t});}
+      this.townPath(points,lane.width,0xa6b3b3);
+      this.at(lane.t,lane.side*(sample.halfWidth+5),_p,sample);this.settle(_p,lane.t);
+      const yaw=Math.atan2(-sample.binormal.x*lane.side,-sample.binormal.z*lane.side),xf=trs(_p.x,_p.y,_p.z,yaw);
+      // Furnished mouths and deeper intersections read as inhabited local streets.
+      for(const side of [-1,1])this.importedTown.add('street-lantern-post',xf.clone().multiply(trs(side*(lane.width/2+.5),.1,0,0)));
+      if(lane.width>6){this.importedTown.add('commuter-bicycle',xf.clone().multiply(trs(-lane.width/2-.7,0,-3,Math.PI/2)));this.importedTown.add('potted-street-plant',xf.clone().multiply(trs(lane.width/2+.7,0,-1,0,1.4)));}
+    }
+    const placements: {key:string;x:number;y:number;z:number;t:number;width:number;height:number;depth:number}[] = [];
+    for (const lot of plan.buildings) {
+      const s = track.sample(lot.t);
+      const lat = lot.side * (s.halfWidth + lot.setback + lot.depth / 2);
+      if (this.isSea(lot.t, lat, s)) continue;
+      this.at(lot.t, lat, _p, s); this.settle(_p, lot.t);
+      if (this.blocked(_p, Math.max(lot.width, lot.depth) * .38)) continue;
+      const yaw = Math.atan2(-s.binormal.x * lot.side, -s.binormal.z * lot.side) + lot.yaw;
+      const footing = trs(_p.x, _p.y, _p.z, yaw);
+      let lowest = _p.y, highest = _p.y;
+      for (const x of [-lot.width / 2, lot.width / 2]) for (const z of [-lot.depth / 2, lot.depth / 2]) {
+        _p2.set(x, 0, z).applyMatrix4(footing);
+        const height = this.groundY(_p2, lot.t); lowest = Math.min(lowest, height); highest = Math.max(highest, height);
+      }
+      _p.y = highest + .08;
+      const xf = trs(_p.x, _p.y, _p.z, yaw, lot.scale, lot.scale * lot.stretch, lot.scale);
+      this.importedTown.add(lot.key, xf, new THREE.Color(lot.color));
+      placements.push({key:lot.key,x:_p.x,y:_p.y,z:_p.z,t:lot.t,width:lot.width,height:lot.height,depth:lot.depth});
+      if (!lot.tier && rng() < .65) {
+        const signIndex = placements.length % TOWN_SIGN_COUNT;
+        const sign = xf.clone().multiply(trs(-1.7, 2.7, lot.depth / lot.scale / 2 + .17, 0, .55, 1.45, 1));
+        this.sets.townSign.add(sign, {uv:new THREE.Vector4(1 / TOWN_SIGN_COUNT, 1, signIndex / TOWN_SIGN_COUNT, 0),lod:125});
+        if (rng() < .45) this.importedTown.add('paper-lantern', xf.clone().multiply(trs(1.4, 2.0, lot.depth / lot.scale / 2 + .4, 0)));
+      }
+      const foundation = Math.max(.45, highest - lowest + .35);
+      this.acc.stone.add(bevelBox(lot.width + .15, foundation, lot.depth + .15, .05, .4), trs(_p.x, _p.y - foundation / 2 - .03, _p.z, yaw), new THREE.Color(0xadb3aa));
+      this.dropShadow(_p, Math.max(lot.width, lot.depth) * .58, lot.t, .7);
+      this.claim(_p, Math.max(lot.width, lot.depth) * .5);
+      // Every door has a connection: secondary homes enter from the back street.
+      const start=lot.tier?23:4.2,end=lot.setback;
+      const approach:{p:THREE.Vector3;t:number}[]=[];
+      for(let d=start;d<=end+.01;d+=Math.max(.8,(end-start)/10)){
+        this.at(lot.t,lot.side*(s.halfWidth+d),_p2,s);this.settle(_p2,lot.t);approach.push({p:_p2.clone(),t:lot.t});
+      }
+      this.townPath(approach,lot.key.startsWith('residence-')?Math.max(2.4,lot.width*.6):Math.max(3.2,lot.width*.82),0xb0bbb9);
+      this.at(lot.t,lot.side*(s.halfWidth+lot.setback-1.3),_p2,s);this.settle(_p2,lot.t);
+      const front=trs(_p2.x,_p2.y+.05,_p2.z,yaw);
+      this.acc.stone.add(bevelBox(lot.width*.78,.18,2.5,.03,.5),front,new THREE.Color(0xb5c0bc));
+      this.importedTown.add('potted-street-plant',front.clone().multiply(trs(lot.width*.3,0,0,0,1.15)));
+      if(placements.length%3===0)this.importedTown.add('street-flower-bed',front.clone().multiply(trs(-lot.width*.25,0,0,Math.PI/2,.8)));
+      if(lot.setback>8&&rng()<.5)this.importedTown.add('bamboo-fence',front.clone().multiply(trs(lot.width*.28,0,1.2,0,.8)));
+      // Rear gardens add depth and a different canopy to each block.
+      if(lot.tier&&placements.length%2===0){
+        this.at(lot.t,lot.side*(s.halfWidth+lot.setback+lot.depth+3),_p2,s);this.settle(_p2,lot.t);
+        if(!this.blocked(_p2,1.1))this.townTree(_p2.clone(),rng,placements.length);
+      }
+    }
+    for (const [a, b] of TOWN_SECTIONS) {
+      this.walk(a + .003, b - .003, 7.5, (t, s, i) => {
+        for (const side of [-1, 1]) {
+          this.at(t, side * (s.halfWidth + 3.7 + (rng() - .5) * .8), _p, s); this.settle(_p, t);
+          const yaw = Math.atan2(-s.binormal.x * side, -s.binormal.z * side);
+          if (!this.isSea(t, side * (s.halfWidth + 3.7), s) && !this.blocked(_p, .28)) {
+            this.acc.stone.add(bevelBox(2.5, .2, 7.55, .03, .8), trs(_p.x, _p.y - .06, _p.z, Math.atan2(s.tangent.x, s.tangent.z)), new THREE.Color(0xa7bac0));
+            _p.y += .05;
+            if (rng() < .75) this.spectator(trs(_p.x, _p.y, _p.z, yaw + (rng() - .5), .92 + rng() * .16), rng, i % 4);
+          }
+          if (i % 2 === (side === 1 ? 1 : 0)) {
+            this.at(t, side * (s.halfWidth + 5.0), _p, s); this.settle(_p, t);
+            if (!this.blocked(_p, 1)) {
+              this.townTree(_p.clone(),rng,i+(side===1?2:0));
+            }
+          }
+          if (i % 5 === 2) this.utilityPole(t, s, side, rng);
+        }
+      });
+    }
+    this.group.userData.town = {coverage:TOWN_SECTIONS.reduce((n,[a,b])=>n+b-a,0),houses:placements.length,sections:TOWN_SECTIONS,style:'mixed-japanese-neighborhoods',buildingTypes:new Set(placements.map(p=>p.key)).size,maxVisibleCopies:5,placements,lanes:plan.lanes,backstreetSegments,treeTypes:SAKURA_FORMS.length+3,parks:TOWN_PARKS};
+  }
+
+  /** Drape paving to the same sampled terrain as the race and house foundations. */
+  private townPath(points:{p:THREE.Vector3;t:number}[],width:number,color:number) {
+    if(points.length<2)return;
+    const positions:number[]=[],uv:number[]=[],indices:number[]=[];let distance=0;
+    for(let i=0;i<points.length;i++){
+      const {p,t}=points[i],before=points[Math.max(0,i-1)].p,after=points[Math.min(points.length-1,i+1)].p;
+      const tangent=after.clone().sub(before).setY(0).normalize(),cross=new THREE.Vector3(tangent.z,0,-tangent.x);
+      if(i)distance+=p.distanceTo(before);
+      for(const side of [-1,0,1]){
+        const q=p.clone().addScaledVector(cross,side*width/2);q.y=this.groundY(q,t)+.18;
+        positions.push(q.x,q.y,q.z);uv.push((side+1)*width/2/2.8,distance/2.8);
+      }
+      if(i)for(let k=0;k<2;k++){const a=(i-1)*3+k,b=i*3+k;indices.push(a,b,a+1,a+1,b,b+1);}
+    }
+    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.setIndex(indices);geometry.computeVertexNormals();
+    this.acc.stone.add(geometry,new THREE.Matrix4(),new THREE.Color(color));geometry.dispose();
+  }
+  // Cherry placeholders are assigned distinct growth forms after all lots and parks are placed.
+  private townTree(position:THREE.Vector3,rng:RNG,index:number) {
+    const keys=['sakura-natural-spreading','sakura-natural-upright','maple-young','sakura-natural-spreading','birch-young','cherry-young'];
+    const key=keys[index%keys.length],scale=key==='sakura-natural-spreading'?.93:key==='sakura-natural-upright'?.91:key==='maple-young'?.86:1.15;
+    this.importedTown.add(key,trs(position.x,position.y,position.z,rng()*6.28,scale*(key.startsWith('sakura-natural-')?(.96+rng()*.10):(.88+rng()*.28))));
+  }
+
+  /** Two distinct public spaces, reserved before any houses or filler scenery. */
+  private dressTownParks(rng: RNG) {
+    const lawn = new THREE.MeshStandardMaterial({color:0x82ac79,roughness:1});
+    const water = new THREE.MeshStandardMaterial({color:0x63aeb5,roughness:.22,metalness:.05,envMap:this.ctx.envMap});
+    this.parkMaterials.push(lawn,water);
+    for (let index=0;index<TOWN_PARKS.length;index++) {
+      const park=TOWN_PARKS[index],s=this.ctx.track.sample(park.t);
+      const yaw=Math.atan2(-s.binormal.x*park.side,-s.binormal.z*park.side);
+      this.at(park.t,park.side*(s.halfWidth+5+park.depth/2),_p,s);this.settle(_p,park.t);
+      const survey=trs(_p.x,_p.y,_p.z,yaw);
+      let lowest=_p.y,highest=_p.y;
+      for(let ix=0;ix<=10;ix++)for(let iz=0;iz<=8;iz++){
+        _p2.set((ix/10-.5)*park.width,0,(iz/8-.5)*park.depth).applyMatrix4(survey);
+        const height=this.groundY(_p2,park.t);lowest=Math.min(lowest,height);highest=Math.max(highest,height);
+      }
+      _p.y=highest+.42;
+      const base=trs(_p.x,_p.y,_p.z,yaw);
+      const put=(key:string,x:number,z:number,scale=1,ry=0,y=0)=>this.importedTown.add(key,base.clone().multiply(trs(x,y,z,ry,scale)));
+      const stone=(x:number,y:number,z:number,w:number,h:number,d:number,col=0xaab4b2)=>this.acc.stone.add(bevelBox(w,h,d,.06,.7),base.clone().multiply(trs(x,y,z,0)),new THREE.Color(col));
+      const ground=new THREE.Mesh(new THREE.BoxGeometry(park.width,.15,park.depth),lawn);ground.applyMatrix4(base);ground.name=`town-park-${index+1}-lawn`;this.group.add(ground);
+      const foundation=Math.max(.8,highest-lowest+.8);
+      stone(0,-foundation/2,0,park.width+1,foundation,park.depth+1);
+      // Stone promenade and front steps connect the park to the spectator sidewalk.
+      stone(0,.12,0,3,.15,park.depth+2);
+      stone(0,.13,0,park.width-3,.16,2.4);
+      _p2.set(0,0,park.depth/2+3.3).applyMatrix4(base);
+      const entryRise=Math.max(.3,_p.y-this.groundY(_p2,park.t));
+      for(let step=0;step<6;step++)stone(0,-(step+.5)*entryRise/6,park.depth/2+(step+.5)*.5,3.5,entryRise/6+.08,.56);
+      for(const side of [-1,1]){
+        for(let k=0;k<3;k++){
+          const x=side*(park.width/2-4),z=-park.depth/2+4+k*7;
+          const treeKey=k===0?'sakura-natural-spreading':k===1?'sakura-natural-upright':'maple-young';
+          put(treeKey,x,z,(k<2?.92:.8)*(1+rng()*.06),rng()*6.28);
+          put('street-flower-bed',side*7,z,.9,Math.PI/2);
+        }
+        for(const z of [-6,6]){put('garden-stone-bench',side*5,z,1,side===1?-Math.PI/2:Math.PI/2);put('street-lantern-post',side*3,z,1);}
+        put('stone-lantern',side*2.5,park.depth/2-2);
+        put('commuter-bicycle',side*5.5,park.depth/2-1,.95,Math.PI/2);
+      }
+      put('notice-board',-7,park.depth/2-1,1);
+      put('drinks-vending-machine',7,park.depth/2-1,.75);
+      if(index===0){
+        // A koi garden: pond, an arched bridge, rocks and a covered resting shelter.
+        const pond=new THREE.Mesh(new THREE.BoxGeometry(9,.09,6),water);pond.applyMatrix4(base.clone().multiply(trs(-10,.18,-1,0)));pond.name='town-park-koi-pond';this.group.add(pond);
+        stone(-10,.17,-4.2,9.8,.3,.4);stone(-10,.17,2.2,9.8,.3,.4);
+        stone(-14.7,.17,-1,.4,.3,6.5);stone(-5.3,.17,-1,.4,.3,6.5);
+        put('arched-garden-bridge',-10,-1,1.3,0,.17);
+        for(let k=0;k<5;k++)put('moss-stone',-14+k*1.6,-4.6,.8+rng()*.5);
+        put('wayside-rest-shelter',9,-6,1.25);
+        put('town-well',9,4,.85);
+      } else {
+        // Pocket playground: sand, a slide, swings, seats and an open pavilion.
+        stone(-10,.14,-1,9,.16,8,0xe9d5a4);
+        const wood=new THREE.Color(0xa66e48),red=new THREE.Color(0xea8c79);
+        const beam=(x:number,y:number,z:number,w:number,h:number,d:number,rx=0)=>this.acc.wood.add(plainBox(w,h,d),base.clone().multiply(trs(x,y,z,0,1,1,1,rx)),wood);
+        for(const x of [-13,-7]){beam(x,1.8,-2,.18,3.6,.18);beam(x,1.8,-5,.18,3.6,.18);}
+        beam(-10,3.5,-3.5,6.5,.2,.2);
+        for(const x of [-11.5,-8.5]){
+          for(const dx of [-.35,.35])beam(x+dx,2.2,-3.5,.035,2.5,.035);
+          beam(x,.92,-3.5,.9,.12,.5);
+        }
+        beam(8,1.25,-4,.18,2.5,.18);beam(10,1.25,-4,.18,2.5,.18);
+        beam(8,1.25,-6,.18,2.5,.18);beam(10,1.25,-6,.18,2.5,.18);
+        beam(9,2.5,-5,2.6,.2,2.6);
+        this.acc.trim.add(plainBox(1.1,.14,4.7),base.clone().multiply(trs(9,1.3,-1.5,0,1,1,1,.5)),red);
+        for(let k=0;k<5;k++)beam(9,.4+k*.44,-6.2-k*.12,1,.08,.25);
+        put('incense-pavilion',8,6,1.2);
+        put('garden-stone-bench',-10,6,1.2);
+      }
+      for(let k=0;k<8;k++){
+        const x=(k%2===0?-1:1)*(2+rng()*3),z=-park.depth/2+3+k*2.5;
+        this.spectator(base.clone().multiply(trs(x,.2,z,rng()*6.28,.95)),rng,k%4);
+      }
+      // One large reservation keeps later grass/hamlet dressing outside the parks.
+      const center=new THREE.Vector3().setFromMatrixPosition(base);
+      this.claim(center,Math.hypot(park.width,park.depth)/2+1);
+    }
+  }
+
+  private scenicTree(p:THREE.Vector3,scale:number,yaw:number,t:number) {
+    if(isTown(t))this.townTree(p,this.rng,Math.abs(Math.floor(p.x*3+p.z*5)));
+    else this.foliage.pine(p,scale,yaw,t);
+  }
+
+  private coastalTree(p: THREE.Vector3, scale: number, yaw: number, t: number, _lean = 0, _direction = 0) {
+    this.scenicTree(p, scale, yaw, t);
+  }
+
+  private cherryTree(t: number, s: TrackSample, side: number, rng: RNG) {
+    this.at(t,side*(s.halfWidth+5),_p,s);this.settle(_p,t);
+    if(!this.blocked(_p,1))this.townTree(_p.clone(),rng,Math.floor(t*100));
+  }
+
+  private utilityPole(t: number, s: TrackSample, side: number, rng: RNG) {
+    this.at(t, side * (s.halfWidth + 5.6), _p, s);
+    this.settle(_p, t);
+    if (this.blocked(_p, 0.3)) return;
+    const pole = trs(_p.x, _p.y, _p.z, Math.atan2(s.tangent.x, s.tangent.z));
+    this.acc.trim.add(bevelBox(0.2, 7, 0.2), pole.clone().multiply(trs(0, 3.5, 0, 0)), new THREE.Color(0xb4b9b6));
+    this.acc.trim.add(bevelBox(2.2, 0.12, 0.14), pole.clone().multiply(trs(0, 6.5, 0, 0)), new THREE.Color(0x677a80));
+    const next = this.ctx.track.sampleByDistance(t * this.ctx.track.length + 33.6);
+    if (!isTown(next.t)) return;
+    const end = next.pos.clone().addScaledVector(next.binormal, side * (next.halfWidth + 5.6));
+    end.y = this.groundY(end, next.t) + 6.55;
+    const start = _p.clone(); start.y += 6.55;
+    for (let k = -1; k <= 1; k++) {
+      const off = s.binormal.clone().multiplyScalar(k * 0.6);
+      this.acc.rope.add(ropeGeo(start.clone().add(off), end.clone().add(off), 0.8, 0.024), new THREE.Matrix4(), new THREE.Color(0x3c4750));
+    }
   }
 
   /**
@@ -1557,7 +1784,7 @@ export class Scenery implements System {
       if (rng() < 0.55) {
         this.at(t, land * (s.halfWidth + 2.6 + rng() * 5), _p, s);
         this.settle(_p, t);
-        if (rng() < 0.4) this.foliage.pine(_p.clone(), 0.62 + rng() * 0.28, rng() * 6.28, t);
+        if (rng() < 0.4) this.scenicTree(_p.clone(), 0.62 + rng() * 0.28, rng() * 6.28, t);
         else this.foliage.bush(_p.clone(), 0.7 + rng() * 0.6, rng() * 6.28, t, true);
       }
       if (rng() < 0.35) this.marshalPost(t, s, land, rng);
@@ -1587,13 +1814,13 @@ export class Scenery implements System {
         this.at(t, side * (s.halfWidth + 2.6 + rng() * 3.5), _p, s);
         if (!this.isSea(t, side * (s.halfWidth + 2.6), s)) {
           this.settle(_p, t);
-          this.foliage.palm(_p.clone(), 0.85 + rng() * 0.5, rng() * 6.28, t);
+          this.coastalTree(_p.clone(), 0.85 + rng() * 0.5, rng() * 6.28, t);
         }
       }
       if (rng() < 0.55) {
         this.at(t, land * (s.halfWidth + 6 + rng() * 7), _p, s);
         this.settle(_p, t);
-        this.foliage.palm(_p.clone(), 0.75 + rng() * 0.45, rng() * 6.28, t);
+        this.coastalTree(_p.clone(), 0.75 + rng() * 0.45, rng() * 6.28, t);
       }
       // beach furniture between the road and the water
       for (let k = 0; k < 2; k++) {
@@ -1643,7 +1870,7 @@ export class Scenery implements System {
       if (rng() < 0.28) {
         this.at(t, land * (s.halfWidth + 9 + rng() * 8), _p, s);
         this.settle(_p, t);
-        this.foliage.pine(_p.clone(), 0.8 + rng() * 0.35, rng() * 6.28, t);
+        this.scenicTree(_p.clone(), 0.8 + rng() * 0.35, rng() * 6.28, t);
       }
     });
     this.barrierCrowd(0.75, 0.86, -this.seaSide(0.80), 0.7);
@@ -1682,42 +1909,19 @@ export class Scenery implements System {
     const rng = this.rng;
     const track = this.ctx.track;
 
-    // --- windmill on the landward headland
+    // A shrine and vermilion gate replace the western windmill silhouette.
     {
-      const s = track.sample(0.925);
-      const land = -this.seaSide(0.925);
-      this.at(0.925, land * (s.halfWidth + 34), _p, s);
-      this.settle(_p, 0.925);
-      const wm = windmillGeo();
-      const yaw = Math.atan2(-s.binormal.x * land, -s.binormal.z * land);
+      const sm = track.sample(0.875), side = -this.seaSide(0.875);
+      this.at(sm.t, side * (sm.halfWidth + 24), _p, sm); this.settle(_p, sm.t);
+      const yaw = Math.atan2(-sm.binormal.x * side, -sm.binormal.z * side);
       const base = trs(_p.x, _p.y, _p.z, yaw);
-      this.acc.wall.add(wm.tower, base, new THREE.Color(0xf3ece0), (_x, y) => lerp(0.55, 1, smoothstep(0, 2.4, y)));
-      this.acc.trim.add(wm.trim, base, new THREE.Color(0xe8dccb));
-      this.acc.stone.add(bevelBox(9.2, 2.6, 9.2, 0.1, 0.28), _m4.multiplyMatrices(base, trs(0, -1.15, 0, 0)).clone(), new THREE.Color(0xcfc1a8));
-      const rotor = new THREE.Group();
-      rotor.position.copy(_p);
-      rotor.rotation.y = yaw;
-      const hub = new THREE.Group();
-      hub.position.set(0, wm.hubY, wm.hubZ);
-      const rm = new THREE.Mesh(wm.rotor, this.mats.wood);
-      rm.name = 'windmill-rotor';
-      rm.castShadow = true;
-      hub.add(rm);
-      const sails = new THREE.InstancedMesh(wm.sail, this.mats.fabric, 4);
-      for (let i = 0; i < 4; i++) {
-        const a = (i / 4) * Math.PI * 2;
-        sails.setMatrixAt(i, _m4.compose(_p2.set(0, 0, 0), _q.setFromEuler(_e.set(0, 0, a - Math.PI / 2, 'YXZ')), _n.set(1, 1, 1)));
-      }
-      sails.instanceMatrix.needsUpdate = true;
-      sails.geometry.setAttribute('aUv', new THREE.InstancedBufferAttribute(new Float32Array([0.5, 0.5, 0, 0, 0.5, 0.5, 0.5, 0, 0.5, 0.5, 0, 0.5, 0.5, 0.5, 0.5, 0.5]), 4));
-      sails.name = 'windmill-sails';
-      sails.castShadow = true;
-      sails.frustumCulled = false;
-      hub.add(sails);
-      rotor.add(hub);
-      this.group.add(rotor);
-      this.rotor = hub;
-      this.dropShadow(_p, 5.2, 0.925, 0.9);
+      const parts = newHouseParts(this.acc.wall, this.acc.roof, this.acc.trim);
+      buildHouse(parts, rng, base, 8, 7, 2, new THREE.Color(0xf0dac2));
+      this.absorbHouse(parts, []);
+      const red = new THREE.Color(0xcf4b43);
+      for (const x of [-3.0, 3.0]) this.acc.trim.add(bevelBox(0.34, 5.1, 0.34), base.clone().multiply(trs(x, 2.55, 6.6, 0)), red);
+      for (const y of [4.1, 5.0]) this.acc.trim.add(bevelBox(7.6, 0.32, 0.44), base.clone().multiply(trs(0, y, 6.6, 0)), red);
+      this.claim(_p, 6);
     }
 
     // --- lighthouse out on the seaward point, on its own rock
@@ -1751,8 +1955,8 @@ export class Scenery implements System {
       if (rng() < 0.55) {
         this.at(t, land * (s.halfWidth + 4 + rng() * 8), _p, s);
         this.settle(_p, t);
-        if (rng() < 0.45) this.foliage.pine(_p.clone(), 0.8 + rng() * 0.4, rng() * 6.28, t);
-        else if (rng() < 0.6) this.foliage.cyp(_p.clone(), 0.85 + rng() * 0.4, rng() * 6.28, t);
+        if (rng() < 0.45) this.scenicTree(_p.clone(), 0.8 + rng() * 0.4, rng() * 6.28, t);
+        else if (rng() < 0.6) this.scenicTree(_p.clone(), 0.85 + rng() * 0.4, rng() * 6.28, t);
         else this.foliage.bush(_p.clone(), 0.8 + rng() * 0.6, rng() * 6.28, t);
       }
       this.sponsorBoard(t, s, land, rng);
@@ -2182,7 +2386,7 @@ export class Scenery implements System {
     for (let k = 0; k < 2; k++) {
       _p.set(_p2.x + (rng() - 0.5) * 6, _p2.y, _p2.z + (rng() - 0.5) * 6);
       this.settle(_p, t);
-      this.foliage.cyp(_p.clone(), 0.9 + rng() * 0.5, rng() * 6.28, t);
+      this.scenicTree(_p.clone(), 0.9 + rng() * 0.5, rng() * 6.28, t);
     }
     this.dropShadow(_p2, wl * 0.5, t, 0.55);
     this.claim(_p2, wl * 0.6);
@@ -2424,8 +2628,8 @@ export class Scenery implements System {
           if (this.blocked(_p, 1.5) || _p.y < this.seaLevel + 0.5) continue;
           if (!this.flatWorld && this.surfaceAt(_p, t) === Surface.Road) continue;
           const r = rng();
-          if (r < 0.36) this.foliage.pine(_p.clone(), 0.85 + rng() * 0.4, rng() * 6.28, t);
-          else if (r < 0.6) this.foliage.cyp(_p.clone(), 1.0 + rng() * 0.5, rng() * 6.28, t);
+          if (r < 0.36) this.scenicTree(_p.clone(), 0.85 + rng() * 0.4, rng() * 6.28, t);
+          else if (r < 0.6) this.scenicTree(_p.clone(), 1.0 + rng() * 0.5, rng() * 6.28, t);
           else this.foliage.bush(_p.clone(), 1.2 + rng() * 0.9, rng() * 6.28, t, rng() < 0.45);
         }
       }
@@ -2607,8 +2811,8 @@ export class Scenery implements System {
           _p2.set(_p.x + (rng() - 0.5) * 13, _p.y, _p.z + (rng() - 0.5) * 13);
           this.settle(_p2, t);
           if (this.blocked(_p2, 2)) continue;
-          if (rng() < 0.7) this.foliage.pine(_p2.clone(), 1.0 + rng() * 0.5, rng() * 6.28, t);
-          else this.foliage.cyp(_p2.clone(), 1.1 + rng() * 0.5, rng() * 6.28, t);
+          if (rng() < 0.7) this.scenicTree(_p2.clone(), 1.0 + rng() * 0.5, rng() * 6.28, t);
+          else this.scenicTree(_p2.clone(), 1.1 + rng() * 0.5, rng() * 6.28, t);
         }
         for (let k = 0; k < 3; k++) {
           _p2.set(_p.x + (rng() - 0.5) * 15, _p.y, _p.z + (rng() - 0.5) * 15);
@@ -2622,7 +2826,7 @@ export class Scenery implements System {
         for (let k = 0; k < 2; k++) {
           _p2.set(_p.x + (rng() - 0.5) * 7, _p.y, _p.z + (rng() - 0.5) * 7);
           this.settle(_p2, t);
-          this.foliage.cyp(_p2.clone(), 1.15 + rng() * 0.4, rng() * 6.28, t);
+          this.scenicTree(_p2.clone(), 1.15 + rng() * 0.4, rng() * 6.28, t);
         }
       }
     });
@@ -2800,7 +3004,7 @@ export class Scenery implements System {
         // crown over the tarmac, which is what makes it an occluder at all.
         const near01 = clamp((reach - 2.4) / 8, 0, 1);
         const lean = 0.28 - near01 * 0.10 + rng() * 0.12;
-        this.foliage.palm(_p.clone(), lerp(0.94, 1.48, near01) + rng() * 0.12, rng() * 6.28, t, lean, inward);
+        this.coastalTree(_p.clone(), lerp(0.94, 1.48, near01) + rng() * 0.12, rng() * 6.28, t, lean, inward);
         // a couple of understorey shrubs so the trunk is not a lone pole
         for (let k = 0; k < 2; k++) {
           this.at(t, lat - outward * (1.4 + rng() * 2.2), _p2, s);
@@ -2837,7 +3041,7 @@ export class Scenery implements System {
         for (let k = 0; k < 3; k++) {
           this.at(t + (k - 1) * (2.6 / L), lat + (rng() - 0.5) * 2.6, _p2, s);
           this.settle(_p2, t);
-          this.foliage.cyp(_p2.clone(), 1.05 + rng() * 0.5, rng() * 6.28, t);
+          this.scenicTree(_p2.clone(), 1.05 + rng() * 0.5, rng() * 6.28, t);
         }
       }
     }
@@ -2987,14 +3191,14 @@ export class Scenery implements System {
         for (let k = 0; k < n; k++) {
           _p2.set(_p.x + (rng() - 0.5) * 9, _p.y, _p.z + (rng() - 0.5) * 9);
           this.settle(_p2, t);
-          this.foliage.pine(_p2.clone(), 0.95 + rng() * 0.45, rng() * 6.28, t);
+          this.scenicTree(_p2.clone(), 0.95 + rng() * 0.45, rng() * 6.28, t);
         }
       } else if (r < 0.74) {
         const n = 3 + ((rng() * 4) | 0);
         for (let k = 0; k < n; k++) {
           _p2.set(_p.x + (rng() - 0.5) * 7, _p.y, _p.z + (rng() - 0.5) * 7);
           this.settle(_p2, t);
-          this.foliage.cyp(_p2.clone(), 1.0 + rng() * 0.5, rng() * 6.28, t);
+          this.scenicTree(_p2.clone(), 1.0 + rng() * 0.5, rng() * 6.28, t);
         }
       } else {
         for (let k = 0; k < 5; k++) {
@@ -3943,133 +4147,6 @@ export class Scenery implements System {
     });
   }
 
-  // --- village terrace -------------------------------------------------------
-
-  /**
-   * A terraced run.
-   *
-   * Round 1 produced a near-uniform grid of identical boxes at one height and
-   * one footprint depth, packed edge to edge — squinted, an orange-pink noise
-   * field with no landmark in it. What changed:
-   *   • a 5:3:1 height distribution over 2 / 3 / 4 storeys instead of a
-   *     constant, so the roofline steps;
-   *   • per-house setback jitter, so the facade line is not one extruded ribbon;
-   *   • alley gaps carved every few houses, giving the mass negative space;
-   *   • one authored landmark per run — a campanile at ~2.5x the surrounding
-   *     height, placed at the tightest corner so it becomes the visual apex.
-   */
-  private terrace(t0: number, t1: number, side: number, setback: number, rng: RNG, anchors: THREE.Vector3[], tier = 0) {
-    const track = this.ctx.track;
-    const L = track.length || 1;
-    let d = t0 * L;
-    const dEnd = t1 * L;
-    // Houses write straight into the shared merge buffers: a whole street of
-    // thirty terraced facades comes out as three meshes.
-    const parts = newHouseParts(this.acc.wall, this.acc.roof, this.acc.trim);
-
-    // Where the landmark goes: the tightest corner in the run, on the outside.
-    let towerD = -1;
-    let bestCurv = 0;
-    for (let k = 0; k <= 24; k++) {
-      const dd = t0 * L + (k / 24) * (dEnd - t0 * L);
-      const tt = ((dd / L) % 1 + 1) % 1;
-      const c = this.curvature(tt) * side;
-      if (-c > bestCurv) {
-        bestCurv = -c;
-        towerD = dd;
-      }
-    }
-    let towerDone = tier > 0 || towerD < 0;
-
-    let guard = 0;
-    let sinceAlley = 0;
-    const preClaims = this.blockers.length;
-    while (d < dEnd && guard++ < 220) {
-      // 2 / 3 / 4 storeys at roughly 5:3:1 — a height distribution, not a
-      // constant, is what turns a wall of boxes into a hillside town.
-      const hr = rng();
-      let floors = hr < 0.555 ? 2 : hr < 0.888 ? 3 : 4;
-      floors = clamp(floors + tier, 2, 5);
-      const w = 5.0 + rng() * 4.2;
-      const depth = 6.0 + rng() * 5.0;
-      // Setback jitter breaks the single extruded facade line.
-      const jitter = (rng() - 0.5) * 2.4;
-      const s = track.sampleByDistance(d + w / 2);
-      const t = s.t;
-      const lat = side * (s.halfWidth + setback + jitter + depth / 2);
-      if (this.isSea(t, lat, s)) {
-        d += w + 0.6;
-        continue;
-      }
-      this.at(t, lat, _p, s);
-      this.settle(_p, t);
-      if (!this.flatWorld) {
-        const surf = this.surfaceAt(_p, t);
-        if (surf === Surface.Road || surf === Surface.Boost) {
-          d += w + 0.6;
-          continue;
-        }
-      }
-      // Respect anything claimed BEFORE this run — the banner arch's uprights,
-      // the grandstand, an earlier tier. `preClaims` is the cap: this loop
-      // claims each house as it goes, so testing against everything would have
-      // every house rejected by its own neighbour.
-      if (this.blocked(_p, Math.max(w, depth) * 0.45, preClaims)) {
-        d += w + 0.6;
-        continue;
-      }
-      const yaw = Math.atan2(-s.binormal.x * side, -s.binormal.z * side);
-      const xf = trs(_p.x, _p.y, _p.z, yaw);
-
-      if (!towerDone && d + w >= towerD) {
-        towerDone = true;
-        const th = 22 + rng() * 8;
-        const tw = bellTowerGeo(rng, 4.2, th);
-        const tint = _col.set(0xf3ebdc).clone();
-        this.acc.wall.add(tw.wall, xf, tint);
-        this.acc.trim.add(tw.trim, xf, new THREE.Color(0xe8dcc6));
-        this.acc.roof.add(tw.roof, xf, new THREE.Color(0xc9a184));
-        this.acc.stone.add(bevelBox(6.0, 2.4, 6.0, 0.08, 0.3), _m4.multiplyMatrices(xf, trs(0, -1.1, 0, 0)).clone(), new THREE.Color(0xcdbfa6));
-        this.dropShadow(_p, 4.4, t, 0.85);
-        this.claim(_p, 5.5);
-        d += 7.2;
-        sinceAlley = 0;
-        continue;
-      }
-
-      const tint = this.facadeTint();
-      buildHouse(parts, rng, xf, w, depth, floors, tint);
-      // plinth: guarantees the terrace meets a sloping street with no gap
-      this.acc.stone.add(bevelBox(w + 0.25, 3.6, depth + 0.25, 0.06, 0.28), _m4.multiplyMatrices(xf, trs(0, -1.75, 0, 0)).clone(), new THREE.Color(0xcdbfa6));
-      this.dropShadow(_p, Math.max(w, depth) * 0.62, t, 0.7);
-      this.claim(_p, Math.max(w, depth) * 0.62);
-      // 0.55 m minimum party gap: the roofs overhang 0.13 m each side, so
-      // anything tighter drives one roof through the neighbour's wall.
-      d += w + 0.58;
-      sinceAlley++;
-      // Alley: two per run at minimum, so the terrace is buildings with space
-      // between them rather than one continuous ribbon.
-      if (sinceAlley >= 3 && rng() < 0.34) {
-        sinceAlley = 0;
-        const alley = 3.2 + rng() * 2.4;
-        // an arch or a flight of steps closes the far end of the alley
-        const as = track.sampleByDistance(d + alley / 2);
-        this.at(as.t, side * (as.halfWidth + setback + depth + 2.0), _p2, as);
-        this.settle(_p2, as.t);
-        if (!this.isSea(as.t, side * (as.halfWidth + setback + depth + 2.0), as)) {
-          const ay = Math.atan2(-as.binormal.x * side, -as.binormal.z * side);
-          // a flight of steps climbing away up the hill closes the alley view
-          for (let k = 0; k < 5; k++) {
-            _p.copy(_p2).addScaledVector(as.binormal, side * k * 0.85);
-            this.acc.stone.add(bevelBox(alley + 0.6, 0.26, 0.95, 0.03, 0.9), trs(_p.x, _p2.y + 0.13 + k * 0.24, _p.z, ay), new THREE.Color(0xd4c6ab), (_x, y) => lerp(0.62, 1, smoothstep(-0.13, 0.13, y)));
-          }
-        }
-        d += alley;
-      }
-    }
-    this.absorbHouse(parts, anchors);
-  }
-
   /**
    * Wall colour for the next facade in a run.
    *
@@ -4357,7 +4434,7 @@ export class Scenery implements System {
         return;
       }
       const k = rng();
-      if (k < 0.3) this.monastery(x, this.seaLevel + h * 0.9, z, az + Math.PI, 0.9 + rng() * 0.5 + h * 0.004, dist, rng);
+      if (k < 0.3) this.hillTemple(x, this.seaLevel + h * 0.9, z, az + Math.PI, 0.9 + rng() * 0.5 + h * 0.004, dist, rng);
       else if (k < 0.5) {
         const lh = lighthouseGeo(this.seaLevel + h * 0.15, this.seaLevel);
         const base = trs(x + Math.cos(az + 1.4) * r * 0.8, this.seaLevel + h * 0.14, z + Math.sin(az + 1.4) * r * 0.8, rng() * 6.28, 2.2 + rng() * 1.8);
@@ -4751,22 +4828,24 @@ export class Scenery implements System {
   }
 
 
-  /** A walled monastery: a block, a cloister wall, a campanile, a pitched roof. */
-  private monastery(x: number, y: number, z: number, yaw: number, sc: number, dist: number, rng: RNG) {
+  /** A distant temple hall and three-tier pagoda, with broad tiled eaves. */
+  private hillTemple(x: number, y: number, z: number, yaw: number, sc: number, dist: number, rng: RNG) {
     const wall = this.hazeTint(dist, 0xf0e2cc);
-    const roof = this.hazeTint(dist, 0xb5643f);
+    const roof = this.hazeTint(dist, 0x617d98);
+    const wood = this.hazeTint(dist, 0x8e4e40);
     const base = trs(x, y, z, yaw, sc);
     const put = (g: THREE.BufferGeometry, off: THREE.Matrix4, c: THREE.Color) => this.acc.backdrop.add(g, _m4.multiplyMatrices(base, off).clone(), c);
     const bw = 26 + rng() * 12;
     const bh = 13 + rng() * 6;
     put(bevelBox(bw, bh, 15, 0.4, 0.12), trs(0, bh / 2, 0, 0), wall);
-    put(bevelBox(bw + 1.6, 2.4, 16.6, 0.4, 0.12), trs(0, bh + 1.2, 0, 0), roof);
-    // campanile at one end: the vertical is what makes it read as a building
-    const th = bh * 1.9 + rng() * 8;
-    put(bevelBox(6.4, th, 6.4, 0.35, 0.14), trs(bw * 0.42, th / 2, 1.5, 0), wall);
-    put(bevelBox(7.6, 1.8, 7.6, 0.3, 0.16), trs(bw * 0.42, th + 0.9, 1.5, 0), roof);
-    // cloister wall running down the slope
-    put(bevelBox(bw * 1.5, 5.2, 1.4, 0.25, 0.2), trs(-bw * 0.2, 2.6, -11, 0.22), wall);
+    for (const side of [-1, 1]) put(plainBox(Math.hypot(bw / 2 + 2, 5), 1, 20), trs(side * (bw / 4 + 1), bh + 2.5, 0, 0, 1, 1, 1, 0, -side * Math.atan2(5, bw / 2 + 2)), roof);
+    const px = bw * 0.7;
+    for (let level = 0; level < 3; level++) {
+      const width = 10 - level * 1.7, py = level * 7;
+      put(bevelBox(width, 7, width, 0.25, 0.12), trs(px, py + 3.5, 1.5, 0), wood);
+      for (const side of [-1, 1]) put(plainBox(Math.hypot(width / 2 + 2, 2.5), 0.8, width + 4), trs(px + side * (width / 4 + 1), py + 7.3, 1.5, 0, 1, 1, 1, 0, -side * Math.atan2(2.5, width / 2 + 2)), roof);
+    }
+    put(plainBox(0.45, 4, 0.45), trs(px, 24, 1.5, 0), wood);
   }
 
   /**
@@ -4776,7 +4855,7 @@ export class Scenery implements System {
    * sub-pixel houses (which cost triangles and read as noise).
    */
   private townStackLocal(base: THREE.Matrix4, x: number, y: number, z: number, spread: number, rise: number, dist: number, rng: RNG) {
-    const roof = this.hazeTint(dist, 0xb5643f);
+    const roof = this.hazeTint(dist, 0x6d849e);
     const unit = Math.max(4, spread * 0.14);
     const rows = 4;
     for (let r = 0; r < rows; r++) {
@@ -4791,7 +4870,8 @@ export class Scenery implements System {
         // reason a Mediterranean hill town is legible at silhouette size (§3).
         const wall = this.hazeTint(dist, PAL.pastels[(rng() * 5) | 0]);
         this.acc.backdrop.add(bevelBox(bw, bh, unit, 0.3, 0.12), _m4.multiplyMatrices(base, trs(bx, rowY + bh / 2, rowZ, (rng() - 0.5) * 0.3)).clone(), wall);
-        this.acc.backdrop.add(bevelBox(bw + unit * 0.16, unit * 0.2, unit * 1.16, 0.25, 0.14), _m4.multiplyMatrices(base, trs(bx, rowY + bh + unit * 0.1, rowZ, (rng() - 0.5) * 0.3)).clone(), roof);
+        const half = bw / 2 + unit * 0.12, pitch = unit * 0.3;
+        for (const side of [-1, 1]) this.acc.backdrop.add(plainBox(Math.hypot(half, pitch), unit * 0.08, unit * 1.3), _m4.multiplyMatrices(base, trs(bx + side * half / 2, rowY + bh + pitch / 2, rowZ, 0, 1, 1, 1, 0, -side * Math.atan2(pitch, half))).clone(), roof);
       }
     }
   }
@@ -5097,11 +5177,16 @@ export class Scenery implements System {
     const mkMerged = (accKey: string, mat: THREE.Material, name: string, cast = true, receive = true) => {
       const g = this.acc[accKey].build();
       if (!g) return;
-      const mesh = new THREE.Mesh(g, mat);
-      mesh.name = name;
-      mesh.castShadow = cast;
-      mesh.receiveShadow = receive;
-      this.group.add(mesh);
+      const partition = ['wall', 'roof', 'trim', 'stone', 'wood'].includes(accKey);
+      const chunks = partition ? splitStaticGeometry(g) : [g];
+      for (let i = 0; i < chunks.length; i++) {
+        const mesh = new THREE.Mesh(chunks[i], mat);
+        mesh.name = chunks.length === 1 ? name : `${name}-${i}`;
+        mesh.castShadow = cast;
+        mesh.receiveShadow = receive;
+        this.group.add(mesh);
+      }
+      if (partition) g.dispose();
     };
     mkMerged('wall', M.wall, 'village-walls');
     mkMerged('roof', M.roof, 'village-roofs');
