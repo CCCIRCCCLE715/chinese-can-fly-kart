@@ -1,0 +1,11 @@
+{
+  "name": "卡丁王者",
+  "short_name": "卡丁王者",
+  "description": "在樱花町赛道竞速，漂移加速，使用道具争夺冠军。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#05070d",
+  "theme_color": "#05070d"
+}

@@ -1,0 +1,1751 @@
+{
+  "pack": "Feudal Japan Castle Town",
+  "source": "https://3dassets.dev/packs/feudal-japan-castle-town",
+  "contributor": "3D Assets",
+  "license": "Mixed: CC0 1.0 original assets; MIT Sakura Realm adaptations",
+  "aiGenerated": true,
+  "assets": [
+    {
+      "id": "26201",
+      "key": "merchant-house",
+      "title": "Merchant House",
+      "path": "/assets/japanese-town/models/merchant-house.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-merchant-house-5d4e985a",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26201/v1/model.glb",
+      "size": [
+        6.2,
+        4.91,
+        6.5
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26200",
+      "key": "townhouse-middle",
+      "title": "Townhouse Middle",
+      "path": "/assets/japanese-town/models/townhouse-middle.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-townhouse-middle-b213b4f9",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26200/v1/model.glb",
+      "size": [
+        5.2,
+        4.91,
+        6.45
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26203",
+      "key": "townhouse-corner",
+      "title": "Townhouse Corner",
+      "path": "/assets/japanese-town/models/townhouse-corner.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-townhouse-corner-695de7e2",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26203/v1/model.glb",
+      "size": [
+        5.6,
+        4.91,
+        6
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26199",
+      "key": "townhouse-courtyard",
+      "title": "Townhouse Courtyard",
+      "path": "/assets/japanese-town/models/townhouse-courtyard.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-townhouse-courtyard-57de97e3",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26199/v1/model.glb",
+      "size": [
+        9.2,
+        4.91,
+        5.001
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26207",
+      "key": "roadside-inn",
+      "title": "Roadside Inn",
+      "path": "/assets/japanese-town/models/roadside-inn.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-roadside-inn-78fe3c64",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26207/v1/model.glb",
+      "size": [
+        7.3,
+        7.11,
+        6
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26208",
+      "key": "tea-house",
+      "title": "Tea House",
+      "path": "/assets/japanese-town/models/tea-house.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-tea-house-a168f962",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26208/v1/model.glb",
+      "size": [
+        6.2,
+        4.91,
+        5.55
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26209",
+      "key": "bath-house",
+      "title": "Bath House",
+      "path": "/assets/japanese-town/models/bath-house.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-bath-house-f3524f03",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26209/v1/model.glb",
+      "size": [
+        7.2,
+        5,
+        7
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26210",
+      "key": "sake-brewery",
+      "title": "Sake Brewery",
+      "path": "/assets/japanese-town/models/sake-brewery.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-sake-brewery-ce7201c1",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26210/v1/model.glb",
+      "size": [
+        8.2,
+        5.41,
+        6.75
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26216",
+      "key": "blacksmith-workshop",
+      "title": "Blacksmith Workshop",
+      "path": "/assets/japanese-town/models/blacksmith-workshop.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-blacksmith-workshop-b29a3ce1",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26216/v1/model.glb",
+      "size": [
+        6.2,
+        4.91,
+        5.8
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26217",
+      "key": "plaster-storehouse",
+      "title": "Plaster Storehouse",
+      "path": "/assets/japanese-town/models/plaster-storehouse.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-plaster-storehouse-4386f46b",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26217/v1/model.glb",
+      "size": [
+        5.2,
+        5.31,
+        6
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26221",
+      "key": "town-watchtower",
+      "title": "Town Watchtower",
+      "path": "/assets/japanese-town/models/town-watchtower.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-town-watchtower-546f8e2a",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26221/v1/model.glb",
+      "size": [
+        4.1,
+        8.36,
+        3.8
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26230",
+      "key": "rice-dealer",
+      "title": "Rice Dealer",
+      "path": "/assets/japanese-town/models/rice-dealer.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-rice-dealer-098587e8",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26230/v1/model.glb",
+      "size": [
+        5.2,
+        4.91,
+        5.65
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26233",
+      "key": "silk-merchant",
+      "title": "Silk Merchant",
+      "path": "/assets/japanese-town/models/silk-merchant.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-silk-merchant-1cc6dd08",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26233/v1/model.glb",
+      "size": [
+        5.2,
+        4.91,
+        5.25
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26240",
+      "key": "pottery-shop",
+      "title": "Pottery Shop",
+      "path": "/assets/japanese-town/models/pottery-shop.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-pottery-shop-6f5c37fc",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26240/v1/model.glb",
+      "size": [
+        5.2,
+        4.91,
+        5.35
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26243",
+      "key": "fishmonger",
+      "title": "Fishmonger",
+      "path": "/assets/japanese-town/models/fishmonger.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-fishmonger-b8c30273",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26243/v1/model.glb",
+      "size": [
+        5.2,
+        4.91,
+        5.6
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26245",
+      "key": "noodle-shop",
+      "title": "Noodle Shop",
+      "path": "/assets/japanese-town/models/noodle-shop.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-noodle-shop-edcc8b31",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26245/v1/model.glb",
+      "size": [
+        5.2,
+        4.91,
+        5.45
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26252",
+      "key": "herbalist-shop",
+      "title": "Herbalist Shop",
+      "path": "/assets/japanese-town/models/herbalist-shop.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-herbalist-shop-bae4cd4e",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26252/v1/model.glb",
+      "size": [
+        5.2,
+        4.91,
+        5.4
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26253",
+      "key": "carpenter-shop",
+      "title": "Carpenter Shop",
+      "path": "/assets/japanese-town/models/carpenter-shop.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-carpenter-shop-792d66b2",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26253/v1/model.glb",
+      "size": [
+        6.2,
+        4.938,
+        5.57
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26258",
+      "key": "dye-workshop",
+      "title": "Dye Workshop",
+      "path": "/assets/japanese-town/models/dye-workshop.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-dye-workshop-a9574352",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26258/v1/model.glb",
+      "size": [
+        6.2,
+        4.91,
+        5.9
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26264",
+      "key": "umbrella-maker",
+      "title": "Umbrella Maker",
+      "path": "/assets/japanese-town/models/umbrella-maker.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-umbrella-maker-e71ab57b",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26264/v1/model.glb",
+      "size": [
+        5.2,
+        4.91,
+        6.1
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26266",
+      "key": "lantern-maker",
+      "title": "Lantern Maker",
+      "path": "/assets/japanese-town/models/lantern-maker.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-lantern-maker-13496a8c",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26266/v1/model.glb",
+      "size": [
+        5.2,
+        4.91,
+        5.5
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26270",
+      "key": "scribe-school",
+      "title": "Scribe School",
+      "path": "/assets/japanese-town/models/scribe-school.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-scribe-school-70db4172",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26270/v1/model.glb",
+      "size": [
+        7.2,
+        4.91,
+        5.6
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26278",
+      "key": "granary-raised",
+      "title": "Granary Raised",
+      "path": "/assets/japanese-town/models/granary-raised.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-granary-raised-6e4c4432",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26278/v1/model.glb",
+      "size": [
+        5.2,
+        5.91,
+        5
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26281",
+      "key": "river-warehouse",
+      "title": "River Warehouse",
+      "path": "/assets/japanese-town/models/river-warehouse.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-river-warehouse-626157eb",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26281/v1/model.glb",
+      "size": [
+        8.2,
+        5.71,
+        7.5
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26282",
+      "key": "ferry-ticket-hut",
+      "title": "Ferry Ticket Hut",
+      "path": "/assets/japanese-town/models/ferry-ticket-hut.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-ferry-ticket-hut-0f30a5ff",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26282/v1/model.glb",
+      "size": [
+        3.7,
+        4.41,
+        3.65
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26293",
+      "key": "guild-meeting-hall",
+      "title": "Guild Meeting Hall",
+      "path": "/assets/japanese-town/models/guild-meeting-hall.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-guild-meeting-hall-98f2a6d6",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26293/v1/model.glb",
+      "size": [
+        9.2,
+        4.91,
+        7.551
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26294",
+      "key": "wayside-rest-shelter",
+      "title": "Wayside Rest Shelter",
+      "path": "/assets/japanese-town/models/wayside-rest-shelter.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-wayside-rest-shelter-4de1ff83",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26294/v1/model.glb",
+      "size": [
+        4.9,
+        3.86,
+        2.8
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "prop"
+    },
+    {
+      "id": "26328",
+      "key": "stone-lantern",
+      "title": "Stone Lantern",
+      "path": "/assets/japanese-town/models/stone-lantern.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-stone-lantern-e37226d1",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26328/v1/model.glb",
+      "size": [
+        1,
+        2.11,
+        0.9
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "props",
+      "role": "prop"
+    },
+    {
+      "id": "26329",
+      "key": "stepping-stones",
+      "title": "Stepping Stones",
+      "path": "/assets/japanese-town/models/stepping-stones.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-stepping-stones-a4c3e921",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26329/v1/model.glb",
+      "size": [
+        0.718,
+        0.1,
+        2.487
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "props",
+      "role": "prop"
+    },
+    {
+      "id": "26338",
+      "key": "bamboo-fence",
+      "title": "Bamboo Fence",
+      "path": "/assets/japanese-town/models/bamboo-fence.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-bamboo-fence-307d3065",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26338/v1/model.glb",
+      "size": [
+        2.4,
+        1.4,
+        0.115
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "props",
+      "role": "prop"
+    },
+    {
+      "id": "26371",
+      "key": "torii-gate",
+      "title": "Torii Gate",
+      "path": "/assets/japanese-town/models/torii-gate.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-torii-gate-2b436156",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26371/v1/model.glb",
+      "size": [
+        4.672,
+        3.32,
+        0.602
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "prop"
+    },
+    {
+      "id": "26373",
+      "key": "shrine-hall",
+      "title": "Shrine Hall",
+      "path": "/assets/japanese-town/models/shrine-hall.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-shrine-hall-fda8cd9c",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26373/v1/model.glb",
+      "size": [
+        6.2,
+        4.91,
+        6.5
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "building"
+    },
+    {
+      "id": "26386",
+      "key": "raked-garden-tile",
+      "title": "Raked Garden Tile",
+      "path": "/assets/japanese-town/models/raked-garden-tile.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-raked-garden-tile-2e352ab3",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26386/v1/model.glb",
+      "size": [
+        3,
+        0.105,
+        3
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "prop"
+    },
+    {
+      "id": "26388",
+      "key": "arched-garden-bridge",
+      "title": "Arched Garden Bridge",
+      "path": "/assets/japanese-town/models/arched-garden-bridge.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-arched-garden-bridge-4e4fd5f3",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26388/v1/model.glb",
+      "size": [
+        1.48,
+        1.55,
+        4.36
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "prop"
+    },
+    {
+      "id": "26397",
+      "key": "moss-stone",
+      "title": "Moss Stone",
+      "path": "/assets/japanese-town/models/moss-stone.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-moss-stone-018e8893",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26397/v1/model.glb",
+      "size": [
+        1.066,
+        0.56,
+        0.91
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "prop"
+    },
+    {
+      "id": "26412",
+      "key": "garden-stone-bench",
+      "title": "Garden Stone Bench",
+      "path": "/assets/japanese-town/models/garden-stone-bench.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-garden-stone-bench-18945fb2",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26412/v1/model.glb",
+      "size": [
+        1.6,
+        0.55,
+        0.55
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "prop"
+    },
+    {
+      "id": "26418",
+      "key": "garden-footpath",
+      "title": "Garden Footpath",
+      "path": "/assets/japanese-town/models/garden-footpath.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-garden-footpath-3b48930e",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26418/v1/model.glb",
+      "size": [
+        2,
+        0.14,
+        3
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "prop"
+    },
+    {
+      "id": "26419",
+      "key": "incense-pavilion",
+      "title": "Incense Pavilion",
+      "path": "/assets/japanese-town/models/incense-pavilion.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-incense-pavilion-e073221f",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26419/v1/model.glb",
+      "size": [
+        2,
+        2.96,
+        2
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "prop"
+    },
+    {
+      "id": "26434",
+      "key": "paper-lantern",
+      "title": "Paper Lantern",
+      "path": "/assets/japanese-town/models/paper-lantern.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-paper-lantern-461d58a6",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26434/v1/model.glb",
+      "size": [
+        0.54,
+        0.81,
+        0.54
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "props",
+      "role": "prop"
+    },
+    {
+      "id": "26499",
+      "key": "street-lantern-post",
+      "title": "Street Lantern Post",
+      "path": "/assets/japanese-town/models/street-lantern-post.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-street-lantern-post-eabad885",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26499/v1/model.glb",
+      "size": [
+        1,
+        3.21,
+        0.7
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "props",
+      "role": "prop"
+    },
+    {
+      "id": "26500",
+      "key": "town-well",
+      "title": "Town Well",
+      "path": "/assets/japanese-town/models/town-well.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-town-well-b19750e7",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26500/v1/model.glb",
+      "size": [
+        2.7,
+        3.26,
+        2
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "props",
+      "role": "prop"
+    },
+    {
+      "id": "26501",
+      "key": "notice-board",
+      "title": "Notice Board",
+      "path": "/assets/japanese-town/models/notice-board.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-notice-board-493c8267",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26501/v1/model.glb",
+      "size": [
+        2.8,
+        2.71,
+        0.7
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "props",
+      "role": "prop"
+    },
+    {
+      "id": "26507",
+      "key": "hand-cart",
+      "title": "Hand Cart",
+      "path": "/assets/japanese-town/models/hand-cart.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-hand-cart-e5de471d",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26507/v1/model.glb",
+      "size": [
+        1.72,
+        1.12,
+        3.603
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "props",
+      "role": "prop"
+    },
+    {
+      "id": "26517",
+      "key": "shop-sign-frame",
+      "title": "Shop Sign Frame",
+      "path": "/assets/japanese-town/models/shop-sign-frame.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-shop-sign-frame-67e52f61",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26517/v1/model.glb",
+      "size": [
+        1,
+        2.3,
+        0.09
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "props",
+      "role": "prop"
+    },
+    {
+      "id": "26526",
+      "key": "market-stall-counter",
+      "title": "Market Stall Counter",
+      "path": "/assets/japanese-town/models/market-stall-counter.glb",
+      "source": "https://3dassets.dev/assets/feudal-japan-castle-town-market-stall-counter-4bd0f198",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/26526/v1/model.glb",
+      "size": [
+        2,
+        0.88,
+        0.8
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "props",
+      "role": "prop"
+    },
+    {
+      "id": "30073",
+      "key": "commuter-bicycle",
+      "title": "Commuter Bicycle",
+      "path": "/assets/japanese-town/models/commuter-bicycle.glb",
+      "source": "https://3dassets.dev/assets/japanese-school-and-city-street-bicycle-commuter-d3ed9187",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/30073/v1/model.glb",
+      "size": [
+        1.68,
+        1.014,
+        0.67
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "vehicles",
+      "role": "prop"
+    },
+    {
+      "id": "30077",
+      "key": "street-flower-bed",
+      "title": "Flower Bed",
+      "path": "/assets/japanese-town/models/street-flower-bed.glb",
+      "source": "https://3dassets.dev/assets/japanese-school-and-city-street-flower-bed-a30e6f40",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/30077/v1/model.glb",
+      "size": [
+        2.4,
+        0.63,
+        1.1
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "nature",
+      "role": "prop"
+    },
+    {
+      "id": "30080",
+      "key": "drinks-vending-machine",
+      "title": "Drinks Vending Machine",
+      "path": "/assets/japanese-town/models/drinks-vending-machine.glb",
+      "source": "https://3dassets.dev/assets/japanese-school-and-city-street-vending-machine-e6d81bc5",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/30080/v1/model.glb",
+      "size": [
+        1.05,
+        2.83,
+        0.824
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "props",
+      "role": "prop"
+    },
+    {
+      "id": "30082",
+      "key": "street-cherry-tree",
+      "title": "Cherry Tree in Blossom",
+      "path": "/assets/japanese-town/models/street-cherry-tree.glb",
+      "source": "https://3dassets.dev/assets/japanese-school-and-city-street-cherry-tree-blossom-618a9f6d",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/30082/v1/model.glb",
+      "size": [
+        4.091,
+        4.56,
+        4.088
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "nature",
+      "role": "prop"
+    },
+    {
+      "id": "36400",
+      "key": "home-wall",
+      "title": "Alley Wall Bay (Izakaya Alley and Ramen Shop)",
+      "path": "/assets/japanese-town/models/home-wall.glb",
+      "source": "https://3dassets.dev/assets/izakaya-alley-and-ramen-shop-alley-wall-bay-156e2667",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/36400/v1/model.glb",
+      "size": [
+        4.001,
+        3.2,
+        0.391
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "module"
+    },
+    {
+      "id": "36399",
+      "key": "home-upper-window",
+      "title": "Upper Storey Bay (Izakaya Alley and Ramen Shop)",
+      "path": "/assets/japanese-town/models/home-upper-window.glb",
+      "source": "https://3dassets.dev/assets/izakaya-alley-and-ramen-shop-upper-storey-bay-d027a420",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/36399/v1/model.glb",
+      "size": [
+        4.001,
+        2.8,
+        0.411
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "module"
+    },
+    {
+      "id": "36403",
+      "key": "home-upper-balcony",
+      "title": "Upper Storey Balcony Bay (Izakaya Alley and Ramen Shop)",
+      "path": "/assets/japanese-town/models/home-upper-balcony.glb",
+      "source": "https://3dassets.dev/assets/izakaya-alley-and-ramen-shop-upper-storey-balcony-bay-faf33b5c",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/36403/v1/model.glb",
+      "size": [
+        4.001,
+        2.8,
+        1.311
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "module"
+    },
+    {
+      "id": "36405",
+      "key": "home-entry-garage",
+      "title": "Shopfront Shutter Bay (Izakaya Alley and Ramen Shop)",
+      "path": "/assets/japanese-town/models/home-entry-garage.glb",
+      "source": "https://3dassets.dev/assets/izakaya-alley-and-ramen-shop-shopfront-shutter-bay-90b6160f",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/36405/v1/model.glb",
+      "size": [
+        4.001,
+        3.2,
+        0.336
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "module"
+    },
+    {
+      "id": "36418",
+      "key": "potted-street-plant",
+      "title": "Potted Plant in a Can (Izakaya Alley and Ramen Shop)",
+      "path": "/assets/japanese-town/models/potted-street-plant.glb",
+      "source": "https://3dassets.dev/assets/izakaya-alley-and-ramen-shop-potted-plant-in-can-ca363621",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/36418/v1/model.glb",
+      "size": [
+        0.42,
+        0.919,
+        0.42
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "nature",
+      "role": "prop"
+    },
+    {
+      "id": "36423",
+      "key": "home-entry-ramen",
+      "title": "Ramen Shop Front Bay (Izakaya Alley and Ramen Shop)",
+      "path": "/assets/japanese-town/models/home-entry-ramen.glb",
+      "source": "https://3dassets.dev/assets/izakaya-alley-and-ramen-shop-ramen-shop-front-bay-a59b7734",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/36423/v1/model.glb",
+      "size": [
+        4.14,
+        3.201,
+        0.615
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "module"
+    },
+    {
+      "id": "36441",
+      "key": "home-entry-lattice",
+      "title": "Izakaya Front Bay (Izakaya Alley and Ramen Shop)",
+      "path": "/assets/japanese-town/models/home-entry-lattice.glb",
+      "source": "https://3dassets.dev/assets/izakaya-alley-and-ramen-shop-izakaya-front-bay-f13438b4",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/36441/v1/model.glb",
+      "size": [
+        4.12,
+        3.201,
+        0.719
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "module"
+    },
+    {
+      "id": "30062",
+      "key": "home-tiled-roof",
+      "title": "Roof Section, Tiled (Japanese School and City Street)",
+      "path": "/assets/japanese-town/models/home-tiled-roof.glb",
+      "source": "https://3dassets.dev/assets/japanese-school-and-city-street-roof-section-tiled-f637d7ef",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/30062/v1/model.glb",
+      "size": [
+        4.56,
+        0.29,
+        4.58
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "buildings",
+      "role": "module"
+    },
+    {
+      "id": "28317",
+      "key": "birch-young",
+      "title": "Silver Birch Young (Dense Temperate Forest Flora)",
+      "path": "/assets/japanese-town/models/birch-young.glb",
+      "source": "https://3dassets.dev/assets/dense-temperate-forest-flora-birch-young-ac75b910",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/28317/v1/model.glb",
+      "size": [
+        1.901,
+        4.407,
+        1.673
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "nature",
+      "role": "prop"
+    },
+    {
+      "id": "28319",
+      "key": "maple-young",
+      "title": "Sycamore Maple Young (Dense Temperate Forest Flora)",
+      "path": "/assets/japanese-town/models/maple-young.glb",
+      "source": "https://3dassets.dev/assets/dense-temperate-forest-flora-sycamore-young-40b59f98",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/28319/v1/model.glb",
+      "size": [
+        4.528,
+        6.125,
+        4.79
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "nature",
+      "role": "prop"
+    },
+    {
+      "id": "28341",
+      "key": "cherry-young",
+      "title": "Wild Cherry Young (Dense Temperate Forest Flora)",
+      "path": "/assets/japanese-town/models/cherry-young.glb",
+      "source": "https://3dassets.dev/assets/dense-temperate-forest-flora-cherry-young-c7af821a",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/28341/v1/model.glb",
+      "size": [
+        2.035,
+        4.523,
+        1.93
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "nature",
+      "role": "prop"
+    },
+    {
+      "id": "28343",
+      "key": "cherry-blossom-large",
+      "title": "Wild Cherry In Blossom (Dense Temperate Forest Flora)",
+      "path": "/assets/japanese-town/models/cherry-blossom-large.glb",
+      "source": "https://3dassets.dev/assets/dense-temperate-forest-flora-cherry-blossom-12744dc9",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/28343/v1/model.glb",
+      "size": [
+        9.503,
+        14.194,
+        8.812
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "nature",
+      "role": "prop"
+    },
+    {
+      "id": "3783",
+      "key": "cherry-blossom-spreading",
+      "title": "Wild cherry in blossom (Forest Trees and Woodland Plants)",
+      "path": "/assets/japanese-town/models/cherry-blossom-spreading.glb",
+      "source": "https://3dassets.dev/assets/temperate-forest-ecology-wild-cherry-in-blossom-983af861",
+      "cdnUrl": "https://cdn.3dassets.dev/assets/3783/v1/model.glb",
+      "size": [
+        6.655,
+        15.784,
+        6.459
+      ],
+      "license": {
+        "slug": "cc0-1.0",
+        "name": "CC0 1.0 Universal",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "attributionRequired": false
+      },
+      "aiGenerated": true,
+      "category": "nature",
+      "role": "prop"
+    },
+    {
+      "id": "sakura-natural-spreading",
+      "key": "sakura-natural-spreading",
+      "title": "Natural Japanese sakura — spreading",
+      "path": "/assets/japanese-town/models/sakura-natural-spreading.glb",
+      "source": "https://github.com/Leonxlnx/sakura-realm",
+      "sourceCommit": "4dd670e9ccbf7dba6a72462288fd8111021b3006",
+      "size": [
+        12.310909271240234,
+        9.199999809265137,
+        11.006853103637695
+      ],
+      "license": {
+        "slug": "MIT",
+        "name": "MIT",
+        "url": "https://github.com/Leonxlnx/sakura-realm/blob/main/LICENSE",
+        "attributionRequired": true
+      },
+      "aiGenerated": null,
+      "category": "nature",
+      "role": "prop",
+      "integration": "Static adaptation of the open-source procedural tree. Variable-length flowering sprays following the grown branch skeleton; visible crown gaps, real light and self-shadow.",
+      "woodTriangles": 8139,
+      "flowerCards": 8330,
+      "form": {
+        "height": 8.7,
+        "trunk": 1,
+        "bloom": 1
+      },
+      "growth": {
+        "sprays": 999,
+        "visibleBranches": 850,
+        "patchHalfSize": [
+          0.05669655655266986,
+          0.3039537688527312
+        ],
+        "sprayLength": [
+          0.181834201243125,
+          4.434982495000025
+        ]
+      }
+    },
+    {
+      "id": "sakura-natural-upright",
+      "key": "sakura-natural-upright",
+      "title": "Natural Japanese sakura — upright",
+      "path": "/assets/japanese-town/models/sakura-natural-upright.glb",
+      "source": "https://github.com/Leonxlnx/sakura-realm",
+      "sourceCommit": "4dd670e9ccbf7dba6a72462288fd8111021b3006",
+      "size": [
+        10.201501846313477,
+        9.199999809265137,
+        11.290677547454834
+      ],
+      "license": {
+        "slug": "MIT",
+        "name": "MIT",
+        "url": "https://github.com/Leonxlnx/sakura-realm/blob/main/LICENSE",
+        "attributionRequired": true
+      },
+      "aiGenerated": null,
+      "category": "nature",
+      "role": "prop",
+      "integration": "Static adaptation of the open-source procedural tree. Variable-length flowering sprays following the grown branch skeleton; visible crown gaps, real light and self-shadow.",
+      "woodTriangles": 8243,
+      "flowerCards": 8856,
+      "form": {
+        "height": 9.8,
+        "trunk": 0.84,
+        "bloom": 1.04
+      },
+      "growth": {
+        "sprays": 1026,
+        "visibleBranches": 850,
+        "patchHalfSize": [
+          0.052885176555154026,
+          0.2938622707259877
+        ],
+        "sprayLength": [
+          0.19312337728135165,
+          3.873490649796336
+        ]
+      }
+    },
+    {
+      "id": "sakura-natural-arching",
+      "key": "sakura-natural-arching",
+      "title": "Natural Japanese sakura — arching",
+      "path": "/assets/japanese-town/models/sakura-natural-arching.glb",
+      "source": "https://github.com/Leonxlnx/sakura-realm",
+      "sourceCommit": "4dd670e9ccbf7dba6a72462288fd8111021b3006",
+      "size": [
+        12.003550052642822,
+        9.199999809265137,
+        10.140520095825195
+      ],
+      "license": {
+        "slug": "MIT",
+        "name": "MIT",
+        "url": "https://github.com/Leonxlnx/sakura-realm/blob/main/LICENSE",
+        "attributionRequired": true
+      },
+      "aiGenerated": null,
+      "category": "nature",
+      "role": "prop",
+      "integration": "Static adaptation of the open-source procedural tree. Variable-length flowering sprays following the grown branch skeleton; visible crown gaps, real light and self-shadow.",
+      "woodTriangles": 7689,
+      "flowerCards": 7526,
+      "form": {
+        "height": 7.5,
+        "trunk": 1.18,
+        "bloom": 0.96
+      },
+      "growth": {
+        "sprays": 935,
+        "visibleBranches": 850,
+        "patchHalfSize": [
+          0.05314040097610288,
+          0.2970371162312538
+        ],
+        "sprayLength": [
+          0.20367071827730104,
+          3.807135887135785
+        ]
+      }
+    },
+    {
+      "id": "sakura-natural-leaning",
+      "key": "sakura-natural-leaning",
+      "title": "Natural Japanese sakura — leaning",
+      "path": "/assets/japanese-town/models/sakura-natural-leaning.glb",
+      "source": "https://github.com/Leonxlnx/sakura-realm",
+      "sourceCommit": "4dd670e9ccbf7dba6a72462288fd8111021b3006",
+      "size": [
+        10.900179862976074,
+        9.199999809265137,
+        11.406046867370605
+      ],
+      "license": {
+        "slug": "MIT",
+        "name": "MIT",
+        "url": "https://github.com/Leonxlnx/sakura-realm/blob/main/LICENSE",
+        "attributionRequired": true
+      },
+      "aiGenerated": null,
+      "category": "nature",
+      "role": "prop",
+      "integration": "Static adaptation of the open-source procedural tree. Variable-length flowering sprays following the grown branch skeleton; visible crown gaps, real light and self-shadow.",
+      "woodTriangles": 8093,
+      "flowerCards": 9640,
+      "form": {
+        "height": 8.1,
+        "trunk": 1.08,
+        "bloom": 1.1
+      },
+      "growth": {
+        "sprays": 1086,
+        "visibleBranches": 850,
+        "patchHalfSize": [
+          0.053787022114378115,
+          0.29939702449220124
+        ],
+        "sprayLength": [
+          0.19742704792377733,
+          4.007174602440665
+        ]
+      }
+    },
+    {
+      "id": "sakura-natural-vase",
+      "key": "sakura-natural-vase",
+      "title": "Natural Japanese sakura — vase",
+      "path": "/assets/japanese-town/models/sakura-natural-vase.glb",
+      "source": "https://github.com/Leonxlnx/sakura-realm",
+      "sourceCommit": "4dd670e9ccbf7dba6a72462288fd8111021b3006",
+      "size": [
+        9.531806468963623,
+        9.199999809265137,
+        10.597938537597656
+      ],
+      "license": {
+        "slug": "MIT",
+        "name": "MIT",
+        "url": "https://github.com/Leonxlnx/sakura-realm/blob/main/LICENSE",
+        "attributionRequired": true
+      },
+      "aiGenerated": null,
+      "category": "nature",
+      "role": "prop",
+      "integration": "Static adaptation of the open-source procedural tree. Variable-length flowering sprays following the grown branch skeleton; visible crown gaps, real light and self-shadow.",
+      "woodTriangles": 8102,
+      "flowerCards": 8590,
+      "form": {
+        "height": 10.1,
+        "trunk": 0.78,
+        "bloom": 1.02
+      },
+      "growth": {
+        "sprays": 1007,
+        "visibleBranches": 850,
+        "patchHalfSize": [
+          0.05455479055385211,
+          0.30485057326178383
+        ],
+        "sprayLength": [
+          0.19966451754401973,
+          3.6168279763230293
+        ]
+      }
+    },
+    {
+      "id": "sakura-natural-broad",
+      "key": "sakura-natural-broad",
+      "title": "Natural Japanese sakura — broad",
+      "path": "/assets/japanese-town/models/sakura-natural-broad.glb",
+      "source": "https://github.com/Leonxlnx/sakura-realm",
+      "sourceCommit": "4dd670e9ccbf7dba6a72462288fd8111021b3006",
+      "size": [
+        13.817962646484375,
+        9.199999809265137,
+        10.913717269897461
+      ],
+      "license": {
+        "slug": "MIT",
+        "name": "MIT",
+        "url": "https://github.com/Leonxlnx/sakura-realm/blob/main/LICENSE",
+        "attributionRequired": true
+      },
+      "aiGenerated": null,
+      "category": "nature",
+      "role": "prop",
+      "integration": "Static adaptation of the open-source procedural tree. Variable-length flowering sprays following the grown branch skeleton; visible crown gaps, real light and self-shadow.",
+      "woodTriangles": 8090,
+      "flowerCards": 9176,
+      "form": {
+        "height": 9.3,
+        "trunk": 1.25,
+        "bloom": 1.08
+      },
+      "growth": {
+        "sprays": 1057,
+        "visibleBranches": 850,
+        "patchHalfSize": [
+          0.056571180859743914,
+          0.29785347057757683
+        ],
+        "sprayLength": [
+          0.1958919582110798,
+          3.879164606832691
+        ]
+      }
+    },
+    {
+      "id": "sakura-natural-compact",
+      "key": "sakura-natural-compact",
+      "title": "Natural Japanese sakura — compact",
+      "path": "/assets/japanese-town/models/sakura-natural-compact.glb",
+      "source": "https://github.com/Leonxlnx/sakura-realm",
+      "sourceCommit": "4dd670e9ccbf7dba6a72462288fd8111021b3006",
+      "size": [
+        8.610914468765259,
+        9.199999809265137,
+        9.332128047943115
+      ],
+      "license": {
+        "slug": "MIT",
+        "name": "MIT",
+        "url": "https://github.com/Leonxlnx/sakura-realm/blob/main/LICENSE",
+        "attributionRequired": true
+      },
+      "aiGenerated": null,
+      "category": "nature",
+      "role": "prop",
+      "integration": "Static adaptation of the open-source procedural tree. Variable-length flowering sprays following the grown branch skeleton; visible crown gaps, real light and self-shadow.",
+      "woodTriangles": 8250,
+      "flowerCards": 9684,
+      "form": {
+        "height": 6.8,
+        "trunk": 0.91,
+        "bloom": 1.12
+      },
+      "growth": {
+        "sprays": 1070,
+        "visibleBranches": 850,
+        "patchHalfSize": [
+          0.052553820310717356,
+          0.2976302773127741
+        ],
+        "sprayLength": [
+          0.18834550835029812,
+          4.389430097595321
+        ]
+      }
+    },
+    {
+      "id": "sakura-natural-sweeping",
+      "key": "sakura-natural-sweeping",
+      "title": "Natural Japanese sakura — sweeping",
+      "path": "/assets/japanese-town/models/sakura-natural-sweeping.glb",
+      "source": "https://github.com/Leonxlnx/sakura-realm",
+      "sourceCommit": "4dd670e9ccbf7dba6a72462288fd8111021b3006",
+      "size": [
+        11.67443323135376,
+        9.199999809265137,
+        10.497805118560791
+      ],
+      "license": {
+        "slug": "MIT",
+        "name": "MIT",
+        "url": "https://github.com/Leonxlnx/sakura-realm/blob/main/LICENSE",
+        "attributionRequired": true
+      },
+      "aiGenerated": null,
+      "category": "nature",
+      "role": "prop",
+      "integration": "Static adaptation of the open-source procedural tree. Variable-length flowering sprays following the grown branch skeleton; visible crown gaps, real light and self-shadow.",
+      "woodTriangles": 8043,
+      "flowerCards": 7516,
+      "form": {
+        "height": 7.9,
+        "trunk": 0.95,
+        "bloom": 0.97
+      },
+      "growth": {
+        "sprays": 922,
+        "visibleBranches": 850,
+        "patchHalfSize": [
+          0.057646400478784283,
+          0.3013303195370431
+        ],
+        "sprayLength": [
+          0.1933596400584515,
+          4.308232259503256
+        ]
+      }
+    },
+    {
+      "id": "sakura-natural-rounded",
+      "key": "sakura-natural-rounded",
+      "title": "Natural Japanese sakura — rounded",
+      "path": "/assets/japanese-town/models/sakura-natural-rounded.glb",
+      "source": "https://github.com/Leonxlnx/sakura-realm",
+      "sourceCommit": "4dd670e9ccbf7dba6a72462288fd8111021b3006",
+      "size": [
+        11.359477043151855,
+        9.199999809265137,
+        12.732744693756104
+      ],
+      "license": {
+        "slug": "MIT",
+        "name": "MIT",
+        "url": "https://github.com/Leonxlnx/sakura-realm/blob/main/LICENSE",
+        "attributionRequired": true
+      },
+      "aiGenerated": null,
+      "category": "nature",
+      "role": "prop",
+      "integration": "Static adaptation of the open-source procedural tree. Variable-length flowering sprays following the grown branch skeleton; visible crown gaps, real light and self-shadow.",
+      "woodTriangles": 8016,
+      "flowerCards": 8710,
+      "form": {
+        "height": 8.4,
+        "trunk": 1.12,
+        "bloom": 1.06
+      },
+      "growth": {
+        "sprays": 1010,
+        "visibleBranches": 850,
+        "patchHalfSize": [
+          0.055337945140798386,
+          0.3069701021878359
+        ],
+        "sprayLength": [
+          0.19137806815507477,
+          4.555440319212748
+        ]
+      }
+    }
+  ]
+}

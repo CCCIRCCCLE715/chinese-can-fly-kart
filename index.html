@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <!-- viewport-fit=cover so env(safe-area-inset-*) reports real values on
+         notched phones. maximum-scale/user-scalable are kept for the engines
+         that still honour them, but iOS Safari has ignored them since iOS 10 —
+         the `touch-action: none` below is what actually stops pinch-zoom, along
+         with the gesture handlers in src/core/Input.ts. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>卡丁王者</title>
+
+    <!-- Add to Home Screen, which on a phone is worth more than it sounds.
+         Safari's toolbar and tab strip occupy roughly the top 220px of a
+         landscape phone — about a quarter of the vertical space, in a game that
+         is already short of height and whose menus had to be rebuilt to fit
+         what was left. Launched from the home screen these tags drop the chrome
+         entirely and the game gets the whole panel.
+
+         `black-translucent` puts the status bar over the canvas rather than
+         above it, which is what we want given `viewport-fit=cover` and the
+         `env(safe-area-inset-*)` padding already in the HUD and menu CSS.
+
+         The deprecated apple-prefixed name is kept alongside the standard one:
+         iOS honours the former and nothing else reads it, while the standard
+         `mobile-web-app-capable` is what every other engine looks for. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="卡丁王者" />
+    <meta name="theme-color" content="#05070d" />
+    <meta name="description" content="在樱花町赛道竞速，漂移加速，使用道具争夺冠军。" />
+    <!-- iOS uses a game screenshot when no dedicated touch icon is supplied. -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="./images/kart-title-zh-v2.png" />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 100%; height: 100%; overflow: hidden; background: #05070d;
+        /* the page is a game surface, not a document: no panning, no pinch,
+           no double-tap zoom, no pull-to-refresh, no long-press callout */
+        touch-action: none;
+        overscroll-behavior: none;
+        -webkit-user-select: none; user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+        position: fixed; inset: 0;
+      }
+      body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+      #app { position: fixed; inset: 0; }
+      canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+      #ui { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+    </style>
+    <script type="module" crossorigin src="./assets/index-CjUPu_0Q.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Dm34qzdd.css">
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="ui"></div>
+
+    <!-- Painted on the very first frame, before a single module has parsed, so
+         the tab is never an unexplained black rectangle. main.ts advances it as
+         each system initialises and removes it once the first real frame is up.
+         Building a WebGL scene of this size takes a few seconds — the sky is
+         raymarched into a PMREM probe, every texture is generated procedurally
+         and every shader is compiled up front — and silence during that reads
+         as a hang. -->
+    <div id="boot">
+      <div class="boot-in">
+        <img class="boot-mark" src="./images/kart-title-zh-v2.png" alt="卡丁王者" width="1774" height="887" />
+        <div class="boot-bar"><i></i></div>
+        <div class="boot-step">正在启动</div>
+      </div>
+    </div>
+    <style>
+      #boot {
+        position: fixed; inset: 0; z-index: 100; display: grid; place-items: center;
+        background:
+          radial-gradient(120% 90% at 50% 8%, #2c3560 0%, #141a33 42%, #080b16 100%);
+        color: #f3f6fb; transition: opacity .55s ease; font-family: system-ui, -apple-system, sans-serif;
+      }
+      #boot.done { opacity: 0; pointer-events: none; }
+      .boot-in { display: flex; flex-direction: column; align-items: center; gap: 3.4vmin; }
+      .boot-mark {
+        width: min(88vmin, 84vw); height: auto; max-height: 45vh; object-fit: contain;
+        filter: drop-shadow(0 3px 10px rgba(0,0,0,.35));
+      }
+      .boot-bar {
+        width: 42vmin; max-width: 380px; height: 5px; border-radius: 999px;
+        background: rgba(255,255,255,.13); overflow: hidden;
+      }
+      .boot-bar i {
+        display: block; width: 0%; height: 100%; border-radius: 999px;
+        background: linear-gradient(90deg, #6ad2ff, #ffd27a);
+        transition: width .3s ease; box-shadow: 0 0 12px rgba(255,200,120,.7);
+      }
+      .boot-step {
+        font-size: 2.5vmin; letter-spacing: .22em; text-transform: uppercase;
+        color: rgba(233,240,250,.62); min-height: 1.2em;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot, .boot-bar i { transition: none; }
+      }
+    </style>
+
+    <!-- Vercel Web Analytics. This is the `@vercel/analytics` package's entire
+         job, done without the package: the script is served by the platform at
+         this path on a Vercel deployment, so there is no new runtime dependency
+         and no bundle cost. Cookieless, and it collects nothing that identifies
+         a player.
+
+         It is injected conditionally rather than written as a plain tag,
+         because "404s harmlessly on a dev server" turned out to be false. The
+         platform only serves that path in production, so every local run logged
+         a failed request, and drift-bench, mobile-soak and context-loss all
+         gate on "zero page errors" — three green harnesses reported FAIL for a
+         missing analytics script. Only ask for the file where it exists. -->
+    <script>
+      (function () {
+        var h = location.hostname;
+        if (location.protocol.indexOf('http') !== 0) return;
+        if (h === 'localhost' || h === '::1' || /^127\.|^0\.0\.0\.0$/.test(h)) return;
+        var s = document.createElement('script');
+        s.defer = true;
+        s.src = '/_vercel/insights/script.js';
+        document.head.appendChild(s);
+      })();
+    </script>
+  </body>
+</html>
