@@ -319,12 +319,12 @@ export class Menus {
     wrap.style.flexDirection = 'column';
     wrap.style.alignItems = 'center';
     const logo = el('img', 'kr-logo', wrap) as HTMLImageElement;
-    logo.src = assetUrl('/images/kart-title-zh-v2.png');
-    logo.alt = '卡丁王者';
+    logo.src = assetUrl('/images/chinese-can-fly-title.svg');
+    logo.alt = '中国人能飞：卡丁车';
     logo.width = 1774;
     logo.height = 887;
     logo.draggable = false;
-    el('div', 'kr-sub', wrap, '彩色日式小镇');
+    el('div', 'kr-sub', wrap, '樱花町竞速 · 三秒飞行推进');
     // Built empty; `syncTouchCopy` fills it from `ctx.input.touch` every time
     // that flips. This used to run its OWN `matchMedia('(pointer: coarse)')`
     // probe once, in the constructor — which is exactly the check that fails on

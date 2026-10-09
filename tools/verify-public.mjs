@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer';
 import assert from 'node:assert/strict';
 
-const url = process.argv[2] || 'https://cccircccle715.github.io/kart-royale-cn/';
+const url = process.argv[2] || 'https://cccircccle715.github.io/chinese-can-fly-kart/';
 const options = { headless: true, args: ['--enable-webgl', '--use-angle=metal', '--ignore-gpu-blocklist'] };
 if (process.env.CHROME_PATH) options.executablePath = process.env.CHROME_PATH;
 const browser = await puppeteer.launch(options);
@@ -21,8 +21,9 @@ try {
       town: !!c.scene.getObjectByName('imported-japanese-town'),
       logo: Array.from(document.images).filter(image => image.getAttribute('src')).every(image => image.complete && image.naturalWidth > 0) };
   });
-  assert.equal(initial.racers, 8); assert.equal(initial.importedPlayer, true);
+  assert.equal(initial.title, '中国人能飞：卡丁车'); assert.equal(initial.racers, 8); assert.equal(initial.importedPlayer, true);
   assert.equal(initial.town, true); assert.equal(initial.logo, true);
+  if (process.env.TITLE_SCREENSHOT_PATH) await page.screenshot({ path: process.env.TITLE_SCREENSHOT_PATH });
   await page.evaluate(() => { window.__ctx.race.start(); window.__ctx.race.autoDrive = true; });
   await page.waitForFunction(() => window.__ctx.race.state === 2 && window.__ctx.race.player.forwardSpeed > 3, { timeout: 90000 });
   const racing = await page.evaluate(() => {

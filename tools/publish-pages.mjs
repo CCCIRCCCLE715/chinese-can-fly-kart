@@ -13,7 +13,9 @@ function run(command, args, cwd = root, capture = false) {
 
 run(process.execPath, ['node_modules/typescript/bin/tsc', '--noEmit']);
 run(process.execPath, ['node_modules/vite/bin/vite.js', 'build']);
-const url = run('git', ['remote', 'get-url', process.argv[2] || 'publish'], root, true);
+const remotes = run('git', ['remote'], root, true).split('\n');
+const remote = process.argv[2] || (remotes.includes('publish') ? 'publish' : 'origin');
+const url = run('git', ['remote', 'get-url', remote], root, true);
 const existing = run('git', ['ls-remote', '--heads', url, 'gh-pages'], root, true);
 const temporary = mkdtempSync(join(tmpdir(), 'kart-pages-'));
 try {
@@ -30,7 +32,7 @@ try {
   run('git', ['add', '-A'], temporary);
   const changes = run('git', ['diff', '--cached', '--name-only'], temporary, true);
   if (changes) {
-    run('git', ['-c', 'user.name=Kart Royale Publisher', '-c', 'user.email=157134553+CCCIRCCCLE715@users.noreply.github.com', 'commit', '-m', 'Publish browser game'], temporary);
+    run('git', ['-c', 'user.name=Chinese Can Fly Kart Publisher', '-c', 'user.email=157134553+CCCIRCCCLE715@users.noreply.github.com', 'commit', '-m', 'Publish browser game'], temporary);
     run('git', ['push', 'origin', 'gh-pages'], temporary);
   }
 } finally {

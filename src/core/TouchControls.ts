@@ -1498,7 +1498,7 @@ const MARKUP = `
 
 <div class="tc-coach"></div>
 
-<div class="tc-rotate"><div><b>请横向握持</b><br/>卡丁王者需要横屏游玩。</div></div>
+<div class="tc-rotate"><div><b>请横向握持</b><br/>中国人能飞：卡丁车需要横屏游玩。</div></div>
 `;
 
 const CSS = `

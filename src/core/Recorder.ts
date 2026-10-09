@@ -122,7 +122,7 @@ export class Recorder {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `卡丁王者-${stamp()}.webm`;
+    a.download = `中国人能飞：卡丁车-${stamp()}.webm`;
     a.click();
     // Revoking immediately cancels the download in some builds.
     setTimeout(() => URL.revokeObjectURL(url), 30_000);

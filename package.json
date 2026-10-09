@@ -1,7 +1,7 @@
 {
-  "name": "kart-royale-cn",
-  "version": "1.0.0",
-  "description": "卡丁王者：中文浏览器赛车与 iPhone 体感手柄",
+  "name": "chinese-can-fly-kart",
+  "version": "1.1.1",
+  "description": "中国人能飞：卡丁车 — 在樱花町竞速，驾驶低模赛车，使用火箭进行三秒飞行推进。",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -11,7 +11,14 @@
     "test:link": "node tools/test-link.mjs",
     "audio:bake": "vite --config tools/audio-bake.config.mjs"
   },
-  "keywords": [],
+  "keywords": [
+    "kart",
+    "racing",
+    "threejs",
+    "web-game",
+    "rocket",
+    "motion-controller"
+  ],
   "author": "",
   "license": "MIT",
   "type": "commonjs",
@@ -33,5 +40,10 @@
   },
   "engines": {
     "node": ">=24"
+  },
+  "homepage": "https://cccircccle715.github.io/chinese-can-fly-kart/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CCCIRCCCLE715/chinese-can-fly-kart.git"
   }
 }
