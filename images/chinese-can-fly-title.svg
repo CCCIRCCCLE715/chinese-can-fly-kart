@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img" aria-labelledby="title desc">
+  <title id="title">中国人能飞：卡丁车</title>
+  <desc id="desc">红白赛车标题，配双喷口推进器和青色飞行尾迹。</desc>
+  <defs>
+    <linearGradient id="paint" x2="0" y2="1"><stop stop-color="#fff9ef"/><stop offset=".48" stop-color="#fff"/><stop offset="1" stop-color="#f4bbb5"/></linearGradient>
+    <linearGradient id="red" x2="0" y2="1"><stop stop-color="#ff7664"/><stop offset="1" stop-color="#e72935"/></linearGradient>
+    <linearGradient id="jet" x2="0" y2="1"><stop stop-color="#a5faff"/><stop offset="1" stop-color="#23b4f4" stop-opacity="0"/></linearGradient>
+  </defs>
+  <g transform="translate(600 65)">
+    <path d="M-95 13-27-6 27-6 95 13 76 47 30 33-30 33-76 47Z" fill="url(#red)" stroke="#122a3f" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M-28-18H28L39 31 26 48H-26L-39 31Z" fill="#f5fbff" stroke="#122a3f" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M-27 45H-7L-14 98Z M7 45H27L14 98Z" fill="url(#jet)"/>
+    <path d="M-87 19-64 12-52 40-73 36Z M87 19 64 12 52 40 73 36Z" fill="#f5fbff"/>
+    <path d="M0 0 12 8V22L0 30-12 22V8Z" fill="#f23d3e"/>
+  </g>
+  <g font-family="PingFang SC,Microsoft YaHei,Noto Sans CJK SC,sans-serif" font-weight="900" text-anchor="middle" stroke-linejoin="round" paint-order="stroke fill">
+    <text x="600" y="324" font-size="176" fill="#102333" stroke="#102333" stroke-width="25" transform="translate(0 13)">中国人能飞</text>
+    <text x="600" y="324" font-size="176" fill="url(#paint)" stroke="#e8393b" stroke-width="10">中国人能飞</text>
+    <text x="600" y="480" font-size="118" letter-spacing="25" fill="#f8f4e8" stroke="#102333" stroke-width="15">卡丁车</text>
+  </g>
+  <path d="M204 533H473L498 520H727L751 533H996" fill="none" stroke="#55e5ee" stroke-width="8" stroke-linecap="round"/>
+</svg>
