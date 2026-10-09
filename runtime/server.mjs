@@ -20,7 +20,7 @@ function reply(res,status,body,type='application/json') {res.writeHead(status,{'
 function handler(req,res) {
  let url;try {url=new URL(req.url,'http://localhost');} catch{return reply(res,400,{error:'bad request'});}
  if(req.method!=='GET') return reply(res,405,{error:'method'});
- if(url.pathname==='/health') return reply(res,200,{ok:true,ip,port,tlsPort,phoneControllerVersion:2,rootKey,certFingerprint});
+ if(url.pathname==='/health') return reply(res,200,{ok:true,pid:process.pid,ip,port,tlsPort,phoneControllerVersion:2,rootKey,certFingerprint});
  if(url.pathname==='/session') {
   if(!local(req)||req.headers.origin) return reply(res,403,{error:'local only'});
   if(rooms.size>=32) return reply(res,503,{error:'too many sessions'});

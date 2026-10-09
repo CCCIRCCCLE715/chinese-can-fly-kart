@@ -464,7 +464,7 @@ export class Race implements IRace {
     const rolling = live || this.state === RaceState.Finished || this.state === RaceState.Results;
 
     // --- drive --------------------------------------------------------------
-    this.ai.beginFrame(this.karts, this.player, live ? dt : 0);
+    this.ai.beginFrame(this.karts, this.player, live ? dt : 0, ctx.camera);
 
     for (let i = 0; i < this.karts.length; i++) {
       const k = this.karts[i];
@@ -533,7 +533,7 @@ export class Race implements IRace {
       // a boost — it must never light up the exhausts or read as a cheat.
       if (live && !k.isPlayer && !k.finished && k.stunTime <= 0 && !k.airborne) {
         const a = this.ai.assistFor(k);
-        if (a !== 0 && k.forwardSpeed > 4) {
+        if (a !== 0 && k.forwardSpeed > 4 && brake < .1 && throttle > .5) {
           _v.copy(k.forward).multiplyScalar(a * dt);
           k.launch(_v);
         }

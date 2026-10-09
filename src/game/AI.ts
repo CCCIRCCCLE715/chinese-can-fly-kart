@@ -713,7 +713,9 @@ export class AIDriver {
     // the profile a short way ahead — plus a floor from what is under us now.
     const reactSpan = clamp(Math.abs(speed) * 0.35, 4, 22);
     let target = Math.min(line.speedAt(d), line.minSpeed(d, reactSpan));
-    target *= band;
+    // Catch-up raises straight-line pace, while bends retain the solved grip limit.
+    const turnAhead = Math.abs(line.peakCurv(d, Math.max(reactSpan, look)));
+    target *= turnAhead > .009 ? Math.min(band, 1.04) : band;
     // personal ceiling: even a perfect line is driven a little short of it
     target *= 0.90 + this.skill * 0.11;
     // A committed drift is a slide, and the profile above was solved for a kart
@@ -752,7 +754,7 @@ export class AIDriver {
       cmd.throttle = 1;
     }
     // Never coast out of a corner: the exit is where lap time is made.
-    if (k.driftDir !== 0 || k.boostTime > 0) { cmd.throttle = 1; cmd.brake = 0; }
+    if ((k.driftDir !== 0 || k.boostTime > 0) && (band <= 1.05 || speed <= target)) { cmd.throttle = 1; cmd.brake = 0; }
 
     // ---- unstick -----------------------------------------------------------
     // Beached on a kerb, nose-in to a wall, or wedged against a rival: reverse
@@ -1217,6 +1219,10 @@ export class AIField {
   private bands = new Map<number, number>();
   private assists = new Map<number, number>();
   private hazards: readonly HazardLike[] = [];
+  private viewFrustum = new THREE.Frustum();
+  private viewMatrix = new THREE.Matrix4();
+  private viewSphere = new THREE.Sphere(new THREE.Vector3(), 2.5);
+  private visibleOpponents = new Set<number>();
 
   init(ctx: Ctx, karts: readonly IKart[]) {
     this.line.build(ctx.track);
@@ -1246,13 +1252,24 @@ export class AIField {
   }
 
   /** Time-gap state machine with quarter-lap transitions and individual variation. */
-  beginFrame(karts: readonly IKart[], player: IKart, dt: number) {
-    this.pace.update(karts, player, this.line.length, dt);
+  beginFrame(karts: readonly IKart[], player: IKart, dt: number, camera?: THREE.Camera) {
+    if(camera){
+      camera.updateMatrixWorld();
+      this.viewMatrix.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);
+      this.viewFrustum.setFromProjectionMatrix(this.viewMatrix);
+      this.visibleOpponents.clear();
+      for(const k of karts){
+        this.viewSphere.center.copy(k.position);
+        this.viewSphere.center.y += .8;
+        if(!k.isPlayer&&this.viewFrustum.intersectsSphere(this.viewSphere))this.visibleOpponents.add(k.id);
+      }
+    }
+    this.pace.update(karts, player, this.line.length, dt, camera ? this.visibleOpponents : undefined, BASE_TOP_SPEED);
     for (const k of karts) {
       const pace=k.isPlayer ? 1 : this.pace.forKart(k.id);
       this.bands.set(k.id, pace);
       k.paceScale=pace;
-      this.assists.set(k.id, 0);
+      this.assists.set(k.id, k.isPlayer ? 0 : this.pace.assistFor(k.id));
     }
   }
 
