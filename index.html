@@ -102,23 +102,12 @@
     </style>
     <script type="module" src="/src/main.ts"></script>
 
-    <!-- Vercel Web Analytics. This is the `@vercel/analytics` package's entire
-         job, done without the package: the script is served by the platform at
-         this path on a Vercel deployment, so there is no new runtime dependency
-         and no bundle cost. Cookieless, and it collects nothing that identifies
-         a player.
-
-         It is injected conditionally rather than written as a plain tag,
-         because "404s harmlessly on a dev server" turned out to be false. The
-         platform only serves that path in production, so every local run logged
-         a failed request, and drift-bench, mobile-soak and context-loss all
-         gate on "zero page errors" — three green harnesses reported FAIL for a
-         missing analytics script. Only ask for the file where it exists. -->
+    <!-- The analytics endpoint exists only on Vercel's deployment domain. -->
     <script>
       (function () {
         var h = location.hostname;
         if (location.protocol.indexOf('http') !== 0) return;
-        if (h === 'localhost' || h === '::1' || /^127\.|^0\.0\.0\.0$/.test(h)) return;
+        if (!h.endsWith('.vercel.app')) return;
         var s = document.createElement('script');
         s.defer = true;
         s.src = '/_vercel/insights/script.js';
